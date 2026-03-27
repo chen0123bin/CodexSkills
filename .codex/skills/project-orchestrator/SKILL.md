@@ -15,7 +15,8 @@ description: 在 Codex 中初始化并驱动基于文档的 PRD→plan/task/prog
 1. 检查目标仓库中是否存在 `docs/manifest.yaml`。
 2. 如果不存在，使用 `scripts/init_orchestrator.py` 对仓库根目录进行初始化。
 3. 在创建或更新工作流工件前，先阅读 `references/workflow.md`。
-4. 只有在用户明确要求子代理（subagents）、委派或并行代理工作时，才阅读 `references/subagents.md`。
+4. 本技能默认支持两个子代理角色：`fullstack-developer` 和 `code-reviewer`。
+5. 只有在用户明确要求子代理（subagents）、委派或并行代理工作时，才阅读 `references/subagents.md`，并切换到子代理执行模式。
 
 ## 运行方式
 
@@ -23,6 +24,7 @@ description: 在 Codex 中初始化并驱动基于文档的 PRD→plan/task/prog
 - 将工作流产物限定在 `docs/` 和版本化的 `docs/vX.Y/` 目录中。
 - 让主线程专注于需求、决策和面向用户的总结。
 - 默认优先单代理执行。
+- 默认可用的子代理角色是 `fullstack-developer` 和 `code-reviewer`。
 - 只有在用户明确要求，或任务本身明确需要并行代理时，才使用子代理（subagents）。
 - 将内置模板视为文件结构的事实来源，更新项目工件时不要临时发明新的格式。
 
@@ -73,5 +75,5 @@ description: 在 Codex 中初始化并驱动基于文档的 PRD→plan/task/prog
 
 - `scripts/init_orchestrator.py`：将工作流目录和模板脚手架写入目标仓库。
 - `references/workflow.md`：完整的 phase 规则、manifest 结构、检查点、上下文边界和模板语义。
-- `references/subagents.md`：与官方一致的可选 subagent 使用说明。
+- `references/subagents.md`：子代理执行模式说明，默认包含 `fullstack-developer` 开发和 `code-reviewer` 审查分工。
 - `assets/docs/`：初始化脚本复制到目标仓库中的模板文件。

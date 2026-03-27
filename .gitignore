@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+vite.out
+vite.err
+vite-alt.out
+vite-alt.err

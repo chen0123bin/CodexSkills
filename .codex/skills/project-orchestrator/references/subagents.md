@@ -1,89 +1,74 @@
-# 子代理参考
+# 子代理执行模式
 
-## 只把子代理当作显式启用能力
+## 进入条件
 
-将子代理（subagents）视为这套工作流的可选辅助能力，而不是默认执行路径。
-除非用户明确要求子代理、委派或并行代理工作，否则不要主动生成子代理。
+只有在用户明确表达以下意图时，才进入子代理执行模式：
 
-## 优先用于读多写少的委派
+- 要求使用子代理、subagent、委派、delegation
+- 要求并行处理、多人分工、代理协作
+- 明确指定用子代理完成开发和审查
 
-子代理更适合以下类型的工作：
+如果用户没有明确提出上述要求，默认仍由主代理单独执行，不主动启用子代理。
 
-- 探索与检索
-- 测试分诊
-- 日志分析
-- 摘要整理
-- 边界清晰的审查任务
+## 默认子代理角色
 
-对于写多、改动重的并行工作要更加谨慎，因为并发编辑更容易带来冲突和额外协调成本。
+本技能默认配套两个子代理角色：
 
-## 默认优先单代理
+- `fullstack-developer`
+- `code-reviewer`
 
-主代理默认负责：
+默认对应的代理配置路径为：
 
-- 项目初始化
-- PRD 编写
-- plan 和 task 收敛
-- 常规任务执行
-- 交付总结
+- `.codex/agents/fullstack-developer.toml`
+- `.codex/agents/code-reviewer.toml`
 
-只有在用户明确需要并行处理，或者工作天然可以拆成独立的小块时，才考虑使用子代理。
+## 角色分工
 
-## 配置可选的自定义代理
+### 主代理
 
-如果某个仓库确实需要自定义代理，请将其定义在 `.codex/agents/*.toml` 中。
-保持每个代理职责单一、边界清晰、便于委派。
+主代理负责任务编排与最终收拢：
 
-### 示例：`.codex/agents/fullstack-developer.toml`
+1. 选择下一个可执行 task
+2. 准备任务上下文包
+3. 调度 `fullstack-developer`
+4. 调度 `code-reviewer`
+5. 根据审查结果决定通过、返工或阻塞
+6. 做最终验证并更新 `task.md`、`progress.md`
 
-```toml
-name = "fullstack-developer"
-description = "当一个边界清晰的功能或缺陷同时跨越前后端，并且适合由单个工作代理端到端负责时使用。"
-model = "gpt-5.4"
-model_reasoning_effort = "high"
-sandbox_mode = "workspace-write"
-developer_instructions = """
-端到端负责一个边界清晰的实现任务。
-做最小且协调一致的改动，验证被修改的路径，并报告剩余的集成风险。
-"""
-```
+### `fullstack-developer`
 
-### 示例：`.codex/agents/code-reviewer.toml`
+`fullstack-developer` 负责代码开发与实现。
 
-```toml
-name = "code-reviewer"
-description = "当任务需要更全面的质量审查，覆盖正确性、可维护性和高风险设计点时使用。"
-model = "gpt-5.4"
-model_reasoning_effort = "high"
-sandbox_mode = "read-only"
-developer_instructions = """
-把审查看作基于证据的风险降低工作。
-返回具体发现、最小化后续动作，以及剩余的验证缺口。
-"""
-```
+输入上下文：
 
-## 用显式提示来委派
+1. `task_description`
+2. `done_criteria`
+3. `related_files`
+4. `milestone_context`
+5. `review_feedback`（仅返工时提供）
 
-当用户要求使用子代理时，要把拆分方式写明确。
+职责：
 
-推荐写法：
+- 完成当前 task 的代码开发
+- 补充必要测试
+- 返回 `DONE` 或 `BLOCKED`
+- 报告改动文件、测试情况和需要注意的事项
 
-```text
-使用并行子代理完成这次审查。生成一个代理检查安全风险，一个检查测试缺口，一个检查可维护性。等待三个代理全部返回后，再按类别和文件引用汇总结果。
-```
+### `code-reviewer`
 
-要避免以下隐含假设：
+`code-reviewer` 负责独立代码审查。
 
-- 总是默认把实现工作交给 developer 子代理
-- 总是默认再起一个 reviewer 子代理
-- 默认假设 Codex 会在未被要求时自动生成辅助代理
+输入上下文：
 
-## 保持主线程干净
+1. `task_description`
+2. `done_criteria`
+3. `code_changes`
+4. `developer_report`
 
-如果确实使用了子代理：
+职责：
 
-- 把噪声较大的探索或审查工作委派出去
-- 回收总结，而不是整段原始日志
-- 把最终判断和面对用户的综合结论留在主线程中完成
+- 检查功能正确性、代码质量、范围合规、测试覆盖、安全与性能
+- 返回 `APPROVED`、`NEEDS_CHANGES` 或 `REJECTED`
+- 提供具体修改建议或根本性问题说明
 
-这样才能与官方建议保持一致：使用子代理保护主线程专注度，并让可并行的小块工作并发完成，而不是把每个任务都强行变成多代理流水线。
+
