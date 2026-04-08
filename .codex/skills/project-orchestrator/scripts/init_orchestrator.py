@@ -23,9 +23,12 @@ class FileTemplate:
 
 
 FILE_TEMPLATES = [
+    FileTemplate("docs/.templates/debate-round-template.md", "docs/.templates/debate-round-template.md"),
     FileTemplate("docs/.templates/prd-template.md", "docs/.templates/prd-template.md"),
     FileTemplate("docs/.templates/plan-template.md", "docs/.templates/plan-template.md"),
-    FileTemplate("docs/.templates/task-template.md", "docs/.templates/task-template.md"),
+    FileTemplate("docs/.templates/task-index-template.md", "docs/.templates/task-index-template.md"),
+    FileTemplate("docs/.templates/task-item-template.md", "docs/.templates/task-item-template.md"),
+    FileTemplate("docs/.templates/task-memory-template.md", "docs/.templates/task-memory-template.md"),
     FileTemplate("docs/.templates/progress-template.md", "docs/.templates/progress-template.md"),
     FileTemplate("docs/.templates/delivery-template.md", "docs/.templates/delivery-template.md"),
     FileTemplate("docs/manifest.yaml.tmpl", "docs/manifest.yaml"),

@@ -1,4 +1,4 @@
-name = "code-reviewer"
+name = "reviewer"
 description = "Use when a task needs a broader code-health review covering maintainability, design clarity, and risky implementation choices in addition to correctness."
 model = "gpt-5.4-mini"
 model_reasoning_effort = "high"

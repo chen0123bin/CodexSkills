@@ -1,4 +1,4 @@
 interface:
   display_name: "Project Orchestrator"
-  short_description: "Run a docs-first delivery workflow"
-  default_prompt: "Use $project-orchestrator to set up and run a PRD-to-delivery workflow for this repository."
+  short_description: "Run a debate-driven docs-first delivery workflow"
+  default_prompt: "Use $project-orchestrator to run a debate-driven PRD-to-delivery workflow for this repository."
