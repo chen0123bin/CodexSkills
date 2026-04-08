@@ -8,7 +8,7 @@
 PRD（需求定义）→ 收敛（生成 plan/tasks/progress）→ 执行循环 → 交付 → 版本迭代
 ```
 
-每次启动时，先读取 `docs/manifest.yaml` 判断当前阶段和活跃版本，从断点恢复。
+每次启动时，先读取 `docs/project-memory.md`，再读取 `docs/manifest.yaml` 判断当前阶段和活跃版本，从断点恢复。
 如果 `docs/manifest.yaml` 不存在，则先执行项目初始化。
 
 ## 文件结构总览
@@ -17,10 +17,13 @@ PRD（需求定义）→ 收敛（生成 plan/tasks/progress）→ 执行循环 
 
 ```text
 docs/
+├── project-memory.md
 ├── .templates/
-│   ├── debate-round-template.md
+│   ├── analysis-summary-template.md
+│   ├── brainstorm-round-template.md
 │   ├── delivery-template.md
 │   ├── plan-template.md
+│   ├── project-memory-template.md
 │   ├── prd-template.md
 │   ├── progress-template.md
 │   ├── task-index-template.md
@@ -35,10 +38,13 @@ docs/
 
 ```text
 docs/
+├── project-memory.md
 ├── .templates/
-│   ├── debate-round-template.md
+│   ├── analysis-summary-template.md
+│   ├── brainstorm-round-template.md
 │   ├── delivery-template.md
 │   ├── plan-template.md
+│   ├── project-memory-template.md
 │   ├── prd-template.md
 │   ├── progress-template.md
 │   ├── task-index-template.md
@@ -58,14 +64,15 @@ docs/
     │       ├── task.md
     │       └── memory.md
     ├── brainstorm/
-    │   ├── round-1/
-    │   │   ├── brief.md
-    │   │   ├── cto-proposal.md
-    │   │   ├── cpo-proposal.md
-    │   │   ├── cmo-proposal.md
-    │   │   ├── debate-summary.md
-    │   │   └── consolidated.md
-    │   └── round-2/
+    │   ├── round-1.md
+    │   ├── round-2.md
+    │   ├── round-3.md
+    │   └── analysis/
+    │       ├── cto-proposal.md
+    │       ├── cpo-proposal.md
+    │       ├── cmo-proposal.md
+    │       ├── analysis-summary.md
+    │       └── consolidated.md
     └── delivery.md
 ```
 
@@ -77,14 +84,19 @@ docs/
 project_name: "Example Project"
 current_version: "v1.0"
 current_phase: "prd"
-created_at: "2026-03-27T14:00:00Z"
+created_at: "【2026-03-27 22:00:00】"
 versions:
   v1.0:
     status: "active"
     phase: "prd"
-    started_at: "2026-03-27T14:00:00Z"
+    started_at: "【2026-03-27 22:00:00】"
     completed_at: ""
 ```
+
+### 时间格式
+
+- 所有时间字段统一使用本地时区格式 `【YYYY-MM-DD HH:MM:SS】`
+- `created_at`、`started_at`、`completed_at` 以及各类文档中的时间字段都遵循这一格式
 
 ### 字段含义
 
@@ -92,92 +104,131 @@ versions:
 - `versions.<version>.status`：取值为 `active` 或 `completed`
 - `versions.<version>.phase`：该版本当前记录下来的阶段快照
 
+## 项目级记忆
+
+`docs/project-memory.md` 是跨 phase、跨 task、跨版本共享的项目级记忆文件。
+
+### 读取规则
+
+- 每次启动 workflow 时必须优先读取 `docs/project-memory.md`
+- 进入任何 phase 前，先检查本文件是否包含与当前工作直接相关的项目级约束或偏好
+- 向子代理分发上下文时，只传递与当前任务或当前分析直接相关的记忆条目摘要
+
+### 写入规则
+
+- 当用户明确要求“记住”某条信息时，必须落盘到本文件
+- 默认不要主动写入；如果没有用户明确要求记住，就不要落盘
+- 每条记忆必须包含：
+  - `记录时间`
+  - `记录原因`
+  - `内容主体`
+
+### 质量约束
+
+- `内容主体` 必须精简，只保留后续判断真正需要的事实、约束、偏好、术语或决策
+- 不记录一次性探索日志、临时猜测或 task 级别细节
+- 不记录每一步操作、普通执行进展、命令输出或过程流水
+- 如果新信息覆盖旧记忆，优先更新同主题条目，避免重复堆积
+
 ## Phase 0：项目初始化
 
 当 `docs/manifest.yaml` 不存在时执行：
 
 1. 创建 `docs/` 和 `docs/.templates/`
 2. 将模板文件写入 `docs/.templates/`
-3. 创建 `docs/manifest.yaml`
-4. 创建 `docs/v1.0/` 和 `docs/v1.0/brainstorm/`
-5. 然后进入 Phase 1
+3. 创建 `docs/project-memory.md`
+4. 创建 `docs/manifest.yaml`
+5. 创建 `docs/v1.0/` 和 `docs/v1.0/brainstorm/`
+6. 然后进入 Phase 1
 
 如果只需要创建基础结构，直接运行 `scripts/init_orchestrator.py` 即可。
 
-## Phase 1：PRD 需求定义（Debate 驱动的头脑风暴）
+## Phase 1：PRD 需求定义（主代理自分析 + 最多三轮问答 + 一轮三方分析）
 
 ### 触发条件
 
 `manifest.yaml` 中 `current_phase == "prd"`
 
-### Debate 启用规则
+### 三方分析子代理启用规则
 
-- 如果用户明确提到 Debate、subagents、CTO/CPO/CMO、委派或并行辩论，直接启用真实 Debate 子代理。
-- 如果用户没有显式授权真实 Debate 子代理，先询问一次。
-- 如果用户拒绝或不希望使用真实子代理，则保持相同的文件结构和回合流程，但由主代理串行完成三份角色提案，不启动子代理。
-- Debate 默认依赖仓库中已存在的 `.codex/agents/cto.toml`、`.codex/agents/cpo.toml` 和 `.codex/agents/cmo.toml`，初始化脚本不负责创建它们。
+- 如果用户明确提到 Debate、subagents、CTO/CPO/CMO、委派或并行分析，直接启用真实分析子代理。
+- 如果用户没有显式授权真实分析子代理，先询问一次。
+- 如果用户拒绝或不希望使用真实子代理，则保持相同的分析文件结构，但由主代理串行完成三份角色分析，不启动子代理。
+- 三方分析默认依赖仓库中已存在的 `.codex/agents/cto.toml`、`.codex/agents/cpo.toml` 和 `.codex/agents/cmo.toml`，初始化脚本不负责创建它们。
 
 ### 执行流程
 
-#### Step 1：需求理解
+#### Step 1：主代理自分析并发起最多三轮问答
 
-仔细分析用户提供的需求描述，提取：
+主代理先读取 `docs/project-memory.md`，再对用户需求做详细分析，提取：
 
 - 核心目标
 - 约束条件
 - 用户画像
 - 技术偏好
 - 商业背景（如果有）
+- 已知风险
+- 待确认点
 
-#### Step 2：Debate 驱动的头脑风暴（最多 3 轮）
+在此基础上，主代理最多发起 3 轮问答。默认优先顺序如下，但允许在需求已清晰时提前结束：
 
-每一轮遵循以下四步流程。
-
-##### ① 主代理出题（Framing）
-
-主代理根据当前轮次维度，构造一份维度简报并写入 `docs/v{X}/brainstorm/round-{N}/brief.md`。简报必须包含：
-
-- 本轮讨论的核心问题
-- 用户原始需求上下文的精简版
-- 前序轮次的已确认结论
-- 本轮必须遵守的约束
-
-各轮维度固定如下：
-
-| 轮次 | 维度 | 核心问题 |
+| 默认轮次 | 维度 | 核心目标 |
 |------|------|---------|
 | R1 | 功能范围方案 | 明确做多少、做哪些、MVP 边界 |
 | R2 | 技术架构方向 | 明确技术栈、架构模式、关键设计决策 |
 | R3 | 实现路径方案 | 明确分期策略、优先级和风险规避路径 |
 
-##### ② 三方独立提案（Independent Proposals）
+每一轮使用 `docs/.templates/brainstorm-round-template.md` 维护单一文档 `docs/v{X}/brainstorm/round-{N}.md`，并至少包含：
 
-将维度简报同时分发给三个角色：
+- 与当前轮直接相关的项目级记忆引用
+- 本轮维度与核心目标
+- 主代理基于当前信息的详细判断
+- 待用户确认的问题
+- 问题的候选选项
+- 用户选择或补充回答
+- 本轮确认结论
+- 仍未确认的点
+- 传递给下一轮或分析阶段的约束
+
+问题设计规则：
+
+- 优先使用让用户进行选择的问题，例如 2 到 4 个互斥选项
+- 必要时允许用户补充自由文本
+- 每轮只问当前最影响后续决策的少量问题，避免一次抛出过多开放问题
+
+提前结束规则：
+
+- 如果主代理判断需求已经足够清晰，可以在第 1、2 或 3 轮结束后停止继续追问
+- 如果跳过后续默认维度，必须在当前 `round-{N}.md` 中写明跳过原因
+
+#### Step 2：三方分析与综合决策
+
+主代理在问答结束后，将所有已完成的 round 文档作为统一输入分发给三个角色，典型包括：
+
+- `docs/project-memory.md`
+- `docs/v{X}/brainstorm/round-1.md`
+- `docs/v{X}/brainstorm/round-2.md`
+- `docs/v{X}/brainstorm/round-3.md`
+
+三个角色分别从不同视角做一轮独立分析：
 
 - `cto`：技术可行性、架构、工程成本
 - `cpo`：用户价值、产品体验、MVP 边界
 - `cmo`：市场定位、竞争差异化、增长潜力
 
-真实子代理模式下，三个角色必须互相不可见对方输出，只读取：
+真实子代理模式下，三个角色必须互相不可见对方输出，且禁止传入：
 
-- 当前轮次 `brief.md`
-- 前序轮次 `consolidated.md` 摘要
-
-禁止传入：
-
-- 其他角色提案
+- 其他角色分析
 - 代码文件
 - 完整 PRD
 
 将结果分别写入：
 
-- `docs/v{X}/brainstorm/round-{N}/cto-proposal.md`
-- `docs/v{X}/brainstorm/round-{N}/cpo-proposal.md`
-- `docs/v{X}/brainstorm/round-{N}/cmo-proposal.md`
+- `docs/v{X}/brainstorm/analysis/cto-proposal.md`
+- `docs/v{X}/brainstorm/analysis/cpo-proposal.md`
+- `docs/v{X}/brainstorm/analysis/cmo-proposal.md`
 
-##### ③ 主代理综合辩论（Debate Synthesis）
-
-主代理收到三份提案后，按 `docs/.templates/debate-round-template.md` 生成 `docs/v{X}/brainstorm/round-{N}/debate-summary.md`，并至少包含：
+主代理收到三份分析后，使用 `docs/.templates/analysis-summary-template.md` 生成 `docs/v{X}/brainstorm/analysis/analysis-summary.md`，并至少包含：
 
 - 共识提取：三方都同意的结论
 - 分歧识别：逐项列出冲突点和各方立场
@@ -186,33 +237,21 @@ versions:
 
 综合方案必须是三方视角的组合，不得只是单一角色观点的复述。
 
-##### ④ 用户决策（Decision）
-
-向用户呈现：
+主代理向用户呈现：
 
 - 三方共识
 - 关键分歧与各方立场
 - 2-3 个综合方案
 - 主代理的协调者推荐
 
-等待用户确认后，将最终选择写入 `docs/v{X}/brainstorm/round-{N}/consolidated.md`。
-`consolidated.md` 只保留供下一轮和 PRD 生成使用的最终结论，不重复完整辩论过程。
-
-#### 提前结束机制
-
-满足以下任一条件时可提前结束 Debate：
-
-- 用户明确表示需求已清晰，不需要继续讨论
-- 连续两轮提案高度一致，共识超过 80%，且无重大分歧
-- 主代理判断剩余维度已被前序轮次充分覆盖
-
-提前结束时，必须明确告诉用户跳过了哪些维度以及原因，并等待用户确认。
+等待用户确认后，将最终选择写入 `docs/v{X}/brainstorm/analysis/consolidated.md`。
+`consolidated.md` 只保留供 PRD 生成使用的最终决策，不重复完整分析过程。
 
 #### Step 3：生成 PRD
 
-- 基于所有已确认轮次的 `consolidated.md` 生成 `docs/v{X}/prd.md`
-- PRD 必须包含新增章节“Debate 决策记录”
-- PRD 中记录实际完成的 Debate 轮次、关键分歧、最终决策理由和被否决的重要方案
+- 基于 `docs/project-memory.md`、已完成的 `round-{N}.md` 和 `docs/v{X}/brainstorm/analysis/consolidated.md` 生成 `docs/v{X}/prd.md`
+- PRD 必须包含新增章节“问答与分析决策记录”
+- PRD 中记录实际完成轮次的问答结论、三方分析共识与分歧、最终决策理由和被否决的重要方案
 - 生成 PRD 后必须等待用户确认，不能自动进入下一阶段
 
 #### Step 4：更新状态
@@ -221,11 +260,12 @@ versions:
 
 ### 约束
 
-- Debate 最少 1 轮，最多 3 轮
-- 真实子代理模式下，三个角色必须独立提案，不可互相看到对方输出
-- 主代理作为辩论综合者必须保持中立，不预设倾向
+- Step 1 先做主代理自分析，再按需完成 1 到 3 轮问答
+- Step 2 只进行 1 轮三方分析，不在角色之间来回辩论
+- 真实子代理模式下，三个角色必须独立分析，不可互相看到对方输出
+- 主代理作为综合者必须保持中立，不预设倾向
 - 分歧无法调和时由用户裁决，不由主代理单方面定论
-- 后续轮次必须建立在前序轮次 `consolidated.md` 的确认结论之上
+- 后续轮次必须建立在前序 `round-{N}.md` 的确认结论之上
 - 在此阶段不要开始编写业务代码
 
 ## Phase 2：收敛（PRD → plan / tasks / progress）
@@ -237,12 +277,13 @@ versions:
 ### 执行流程
 
 1. 读取 `docs/v{X}/prd.md`
-2. 生成 `docs/v{X}/plan.md`
-3. 生成 `docs/v{X}/tasks/index.md`
-4. 为每个 task 创建 `docs/v{X}/tasks/T{XXX}/task.md` 和 `docs/v{X}/tasks/T{XXX}/memory.md`
-5. 生成 `docs/v{X}/progress.md`
-6. 向用户展示 plan 概览和 task 索引
-7. 将 `manifest.yaml` 中 `current_phase` 更新为 `execute`
+2. 先读取 `docs/project-memory.md`
+3. 生成 `docs/v{X}/plan.md`
+4. 生成 `docs/v{X}/tasks/index.md`
+5. 为每个 task 创建 `docs/v{X}/tasks/T{XXX}/task.md` 和 `docs/v{X}/tasks/T{XXX}/memory.md`
+6. 生成 `docs/v{X}/progress.md`
+7. 向用户展示 plan 概览和 task 索引
+8. 将 `manifest.yaml` 中 `current_phase` 更新为 `execute`
 
 ### 收敛要求
 
@@ -283,10 +324,12 @@ versions:
 
 #### Step 1：任务准备
 
-1. 读取 `docs/v{X}/plan.md` 和 `docs/v{X}/tasks/index.md`
-2. 选取下一个可执行的 task，并打开对应的 `docs/v{X}/tasks/T{XXX}/task.md` 与 `docs/v{X}/tasks/T{XXX}/memory.md`
-3. 将 task 状态更新为 `in_progress`
-4. 准备任务上下文：
+1. 读取 `docs/project-memory.md`
+2. 读取 `docs/v{X}/plan.md` 和 `docs/v{X}/tasks/index.md`
+3. 选取下一个可执行的 task，并打开对应的 `docs/v{X}/tasks/T{XXX}/task.md` 与 `docs/v{X}/tasks/T{XXX}/memory.md`
+4. 将 task 状态更新为 `in_progress`
+5. 准备任务上下文：
+   - 与当前任务直接相关的项目级记忆摘要
    - 当前 task 的完整描述和 done criteria
    - 当前 task `memory.md` 中保留的已知事实与历史变更摘要
    - 相关代码文件路径
@@ -345,9 +388,10 @@ versions:
 ### 执行流程
 
 1. 生成 `docs/v{X}/delivery.md`
-2. 基于当前版本能力提出 3 到 5 个可能的扩展方向
-3. 更新 `manifest.yaml`
-4. 向用户呈现交付清单，等待确认或新需求
+2. 如果用户明确要求记住新的长期信息，再更新 `docs/project-memory.md`
+3. 基于当前版本能力提出 3 到 5 个可能的扩展方向
+4. 更新 `manifest.yaml`
+5. 向用户呈现交付清单，等待确认或新需求
 
 ### 交付内容
 
@@ -379,7 +423,7 @@ versions:
    - `current_version` 改为新版本
    - `current_phase` 设为 `prd`
    - 新增对应版本条目
-4. 新版本 PRD 阶段优先引用上一版本的 `delivery.md` 作为上下文
+4. 新版本 PRD 阶段优先引用 `docs/project-memory.md` 和上一版本的 `delivery.md` 作为上下文
 5. 回到 Phase 1 开始新一轮循环
 
 ## 上下文管理规则
@@ -388,23 +432,24 @@ versions:
 
 | 阶段 | 加载的文件 | 默认不加载 |
 |------|-----------|-----------|
-| PRD-主代理 | 用户需求 + `manifest.yaml` + 已确认的 `consolidated.md` 摘要 | 代码文件、历史版本完整栈 |
-| Debate-CTO | 当前轮次 `brief.md` + 前序结论摘要 | 其他角色提案、代码文件、完整 PRD |
-| Debate-CPO | 当前轮次 `brief.md` + 前序结论摘要 | 其他角色提案、代码文件、完整 PRD |
-| Debate-CMO | 当前轮次 `brief.md` + 前序结论摘要 | 其他角色提案、代码文件、完整 PRD |
-| Debate-综合 | 三方提案 + 当前轮次 `brief.md` + 前序结论摘要 | 代码文件 |
-| 收敛 | `prd.md` + `manifest.yaml` | 代码文件、历史版本细节 |
-| 执行-当前任务 | `tasks/index.md` 中的当前任务摘要 + 当前任务 `task.md` + 当前任务 `memory.md` + 相关代码文件 + milestone 摘要 | 完整 PRD、其他任务目录、全量历史 |
-| 执行-验证 | `progress.md` + `tasks/index.md` + 当前任务 `memory.md` + 变更文件 | 完整 PRD、brainstorm 全量内容 |
-| 交付 | `progress.md` + `tasks/index.md` + `plan.md` + 必要的任务 `memory.md` 摘要 | 代码细节、brainstorm 原稿 |
+| 全阶段共享 | `project-memory.md` | 无 |
+| PRD-当前轮问答 | `project-memory.md` + 用户需求 + `manifest.yaml` + 前序 `round-{N}.md` 摘要 | 代码文件、历史版本完整栈 |
+| 分析-CTO | 相关的 `project-memory.md` 条目 + 已完成的 `round-{N}.md` | 其他角色分析、代码文件、完整 PRD |
+| 分析-CPO | 相关的 `project-memory.md` 条目 + 已完成的 `round-{N}.md` | 其他角色分析、代码文件、完整 PRD |
+| 分析-CMO | 相关的 `project-memory.md` 条目 + 已完成的 `round-{N}.md` | 其他角色分析、代码文件、完整 PRD |
+| 分析-综合 | 相关的 `project-memory.md` 条目 + 三方分析提案 + 已完成的 `round-{N}.md` | 代码文件 |
+| 收敛 | `project-memory.md` + `prd.md` + `manifest.yaml` | 代码文件、历史版本细节 |
+| 执行-当前任务 | `project-memory.md` 中相关条目 + `tasks/index.md` 中的当前任务摘要 + 当前任务 `task.md` + 当前任务 `memory.md` + 相关代码文件 + milestone 摘要 | 完整 PRD、其他任务目录、全量历史 |
+| 执行-验证 | `project-memory.md` 中相关条目 + `progress.md` + `tasks/index.md` + 当前任务 `memory.md` + 变更文件 | 完整 PRD、brainstorm 全量内容 |
+| 交付 | `project-memory.md` + `progress.md` + `tasks/index.md` + `plan.md` + 必要的任务 `memory.md` 摘要 | 代码细节、brainstorm 原稿 |
 | 版本迭代 | 上一版本 `delivery.md` | 上一版本其他完整文档 |
 
 ## 用户交互检查点
 
 | 阶段 | 是否需要用户介入 |
 |------|----------------|
-| 每轮 Debate 综合方案选择 | 必须 |
-| 提前结束 Debate 确认 | 必须 |
+| 每轮问答回答 | 必须 |
+| 三方分析综合方案选择 | 必须 |
 | PRD 最终确认 | 必须 |
 | plan/tasks 收敛确认 | 建议 |
 | 每个 task 执行 | 自动 |

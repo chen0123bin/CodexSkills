@@ -7,23 +7,28 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 import re
 import sys
 
 
 VERSION_RE = re.compile(r"^v\d+\.\d+$")
+LOCAL_TIMESTAMP_FORMAT = "【%Y-%m-%d %H:%M:%S】"
 
 
 @dataclass(frozen=True)
 class FileTemplate:
     source: str
     destination: str
+    render_as_project_memory: bool = False
 
 
 FILE_TEMPLATES = [
-    FileTemplate("docs/.templates/debate-round-template.md", "docs/.templates/debate-round-template.md"),
+    FileTemplate("docs/.templates/analysis-summary-template.md", "docs/.templates/analysis-summary-template.md"),
+    FileTemplate("docs/.templates/brainstorm-round-template.md", "docs/.templates/brainstorm-round-template.md"),
+    FileTemplate("docs/.templates/project-memory-template.md", "docs/.templates/project-memory-template.md"),
+    FileTemplate("docs/.templates/project-memory-template.md", "docs/project-memory.md", render_as_project_memory=True),
     FileTemplate("docs/.templates/prd-template.md", "docs/.templates/prd-template.md"),
     FileTemplate("docs/.templates/plan-template.md", "docs/.templates/plan-template.md"),
     FileTemplate("docs/.templates/task-index-template.md", "docs/.templates/task-index-template.md"),
@@ -67,8 +72,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def utc_timestamp() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+def local_timestamp() -> str:
+    return datetime.now().astimezone().replace(microsecond=0).strftime(LOCAL_TIMESTAMP_FORMAT)
 
 
 def normalize_project_name(repo_root: Path, raw_name: str) -> str:
@@ -88,6 +93,17 @@ def render_template(text: str, replacements: dict[str, str]) -> str:
     return rendered
 
 
+def render_project_memory(text: str, project_name: str, timestamp: str) -> str:
+    rendered = text
+    rendered = rendered.replace("{项目名称}", project_name)
+    rendered = rendered.replace("{date}", timestamp)
+    rendered = rendered.replace(
+        "| {datetime} | {为什么要记住} | {精简后的项目级事实/约束/偏好/术语/决策} |",
+        f"| {timestamp} | 初始化 | 暂无项目级记忆 |",
+    )
+    return rendered
+
+
 def ensure_directory(path: Path, dry_run: bool) -> None:
     if path.exists():
         print(f"[skip] dir  {path}")
@@ -97,7 +113,14 @@ def ensure_directory(path: Path, dry_run: bool) -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
-def write_file(source_path: Path, destination_path: Path, replacements: dict[str, str], force: bool, dry_run: bool) -> None:
+def write_file(
+    source_path: Path,
+    destination_path: Path,
+    replacements: dict[str, str],
+    force: bool,
+    dry_run: bool,
+    render_as_project_memory: bool,
+) -> None:
     exists = destination_path.exists()
     if exists and not force:
         print(f"[skip] file {destination_path}")
@@ -109,7 +132,11 @@ def write_file(source_path: Path, destination_path: Path, replacements: dict[str
         return
 
     destination_path.parent.mkdir(parents=True, exist_ok=True)
-    content = render_template(source_path.read_text(encoding="utf-8"), replacements)
+    source_text = source_path.read_text(encoding="utf-8")
+    if render_as_project_memory:
+        content = render_project_memory(source_text, replacements["PROJECT_NAME"], replacements["TIMESTAMP"])
+    else:
+        content = render_template(source_text, replacements)
     destination_path.write_text(content, encoding="utf-8")
 
 
@@ -119,7 +146,7 @@ def main() -> int:
     repo_root = Path(args.repo_root).resolve()
     validate_version(args.version)
     project_name = normalize_project_name(repo_root, args.project_name)
-    timestamp = utc_timestamp()
+    timestamp = local_timestamp()
 
     skill_root = Path(__file__).resolve().parent.parent
     template_root = skill_root / "assets"
@@ -161,7 +188,14 @@ def main() -> int:
         if not source_path.exists():
             print(f"[error] Missing template file: {source_path}")
             return 1
-        write_file(source_path, destination_path, replacements, args.force, args.dry_run)
+        write_file(
+            source_path,
+            destination_path,
+            replacements,
+            args.force,
+            args.dry_run,
+            template.render_as_project_memory,
+        )
 
     print()
     if args.dry_run:

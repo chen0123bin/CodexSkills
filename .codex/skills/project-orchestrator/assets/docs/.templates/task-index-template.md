@@ -1,6 +1,6 @@
 # 任务索引：{项目名称}
 
-> 版本: v{X} | 基于 Plan: v{X}/plan.md | 生成时间: {date}
+> 版本: v{X} | 基于 Plan: v{X}/plan.md | 生成时间: {date} | 时间格式: 本地时间 `【YYYY-MM-DD HH:MM:SS】`
 
 ---
 
@@ -19,7 +19,7 @@
 
 ## 任务导航
 
-| 任务 | 标题 | 里程碑 | 状态 | 依赖 | Task 文件 | Memory 文件 | 最后更新 |
+| 任务 | 标题 | 里程碑 | 状态 | 依赖 | Task 文件 | Memory 文件 | 最后更新（本地） |
 |------|------|--------|------|------|-----------|-------------|----------|
 | T001 | {任务标题} | M{X} | `pending` | 无 / T{XXX} | `tasks/T001/task.md` | `tasks/T001/memory.md` | {date} |
 | T002 | {任务标题} | M{X} | `pending` | 无 / T{XXX} | `tasks/T002/task.md` | `tasks/T002/memory.md` | {date} |

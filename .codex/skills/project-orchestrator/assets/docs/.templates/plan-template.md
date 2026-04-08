@@ -1,6 +1,6 @@
 # 计划：{项目名称}
 
-> 版本: v{X} | 基于 PRD: v{X}/prd.md | 生成时间: {date}
+> 版本: v{X} | 基于 PRD: v{X}/prd.md | 生成时间: {date} | 时间格式: 本地时间 `【YYYY-MM-DD HH:MM:SS】`
 
 ---
 
