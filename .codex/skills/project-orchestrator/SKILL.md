@@ -1,6 +1,6 @@
 ---
 name: project-orchestrator
-description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 最多 3 轮用户问答 + 1 轮 CTO/CPO/CMO 分析驱动的 PRD→plan/task/progress→delivery 项目编排流程。适用于需要在仓库中维护 docs/project-memory.md、docs/manifest.yaml、docs/.templates/、版本化 docs/vX.Y/ 工件、先做需求澄清与三方分析、再进行计划拆解、以 tasks/ 目录管理单任务文件与记忆文件、执行跟踪、交付总结与版本迭代的场景。
+description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 有限轮澄清问答 + 可选多视角子代理分析驱动的 PRD→plan/task/progress→delivery 项目编排流程。适用于需要在仓库中维护 docs/project-memory.md、docs/manifest.yaml、docs/.templates/、版本化 docs/vX.Y/ 工件、先做需求澄清与可选多视角分析、再进行计划拆解、以 tasks/ 目录管理单任务文件与记忆文件、执行跟踪、交付总结与版本迭代的场景。
 ---
 
 # 项目编排器
@@ -16,10 +16,10 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 
 1. 检查目标仓库中是否存在 `docs/project-memory.md` 和 `docs/manifest.yaml`。
 2. 如果不存在，使用 `scripts/init_orchestrator.py` 对仓库根目录进行初始化。
-3. 在创建或更新工作流工件前，先阅读 `docs/project-memory.md`，再阅读 `references/workflow.md`。
-4. PRD 阶段默认先组织 `docs/<version>/brainstorm/round-N.md` 的最多 3 轮问答产物，再组织 `docs/<version>/brainstorm/analysis/` 的三方分析产物。
-5. 如果用户明确提到 Debate、subagents、CTO/CPO/CMO 或并行分析，直接阅读 `references/subagents.md` 并启用真实分析子代理。
-6. 如果用户没有显式授权分析子代理，先询问一次；若用户拒绝，则保留同样的分析文件结构，但改由主代理串行生成三份角色分析。
+3. 在创建或更新工作流工件前，先阅读 `docs/project-memory.md`，再阅读 `references/workflow.md`，并按当前阶段进入 `references/phases/*.md` 或 `references/shared.md`。
+4. PRD 阶段默认先组织 `docs/<version>/brainstorm/round-N.md` 的有限轮单题澄清产物，再按需要组织 `docs/<version>/brainstorm/analysis/` 的多视角分析产物。
+5. 如果用户明确提到 Debate、subagents、多视角分析或并行分析，直接阅读 `references/subagents.md` 并启用真实分析子代理。
+6. 如果用户没有显式授权分析子代理，默认保持 `solo` 模式，由主代理直接综合；只有在需要时才升级到多视角分析模式。
 7. 执行阶段仍默认优先单代理完成；只有在用户明确要求子代理、委派或并行代理工作时，才切换到执行期子代理模式。
 
 ## 运行方式
@@ -30,9 +30,9 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 - 所有时间字段统一使用本地时区格式 `【YYYY-MM-DD HH:MM:SS】`。
 - 执行阶段的任务工件统一放在 `docs/<version>/tasks/` 中，按 `tasks/<task-id>/task.md` 与 `tasks/<task-id>/memory.md` 局部加载。
 - 让主线程专注于需求、决策和面向用户的总结。
-- PRD 阶段先由主代理做详细需求分析，再按需完成最多 3 轮用户问答，最后基于已完成轮次做 1 轮 `cto`、`cpo`、`cmo` 分析。
+- PRD 阶段先由主代理做详细需求分析，整理目标、约束、验收标准与关键未知项，再按需完成有限轮单题澄清，最后按分析模式决定是否启用多视角子代理分析。
 - 默认优先单代理执行；只有分析阶段经用户授权，或执行阶段用户明确要求子代理时，才实际调度子代理。
-- PRD 分析阶段默认使用仓库中已存在的 `cto`、`cpo` 和 `cmo` 角色配置，约定路径为 `.codex/agents/`。
+- PRD 分析阶段默认支持 `solo`、`multi-perspective` 和 `custom` 三种模式；若启用多视角分析，优先使用仓库中 `.codex/agents/analysis.toml`。
 - 执行阶段沿用 `developer` 和 `reviewer` 角色约定，不改变其职责。
 - 将内置模板视为文件结构的事实来源，更新项目工件时不要临时发明新的格式。
 
@@ -45,10 +45,12 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 ### PRD 阶段
 
 - 先读取 `docs/project-memory.md`、用户请求和 `docs/manifest.yaml`。
-- 主代理先详细分析用户需求，提取目标、约束、风险和待确认点。
-- 再按需完成最多 3 轮问答，每轮优先使用带选项的问题，并把问题、用户选择/回答和本轮结论都记录在同一个 round 文档中。
-- 问答结束后，将已完成轮次的文档分发给 `cto`、`cpo`、`cmo` 做 1 轮分析，并由主代理生成综合分析与候选方案。
-- 仅在用户显式授权或确认后才启用真实 `cto`、`cpo`、`cmo` 子代理；否则由主代理串行产出同结构分析文件。
+- 主代理先详细分析用户需求，提取目标、范围边界、约束、验收标准、风险和待确认点。
+- 先把待确认点整理成“必问 / 可问”清单，再按阻塞程度动态选题，不预设固定维度顺序。
+- 再按需完成有限轮单题澄清；每轮只问 1 个最影响后续决策的问题，并把问题、2-3 种候选做法、权衡、主代理建议、用户回答和本轮结论都记录在同一个 round 文档中。
+- 默认在 0-5 个问题内收敛；如果超过 5 个问题仍存在影响 PRD 的关键阻塞点，先汇总当前假设与风险，再请求用户决定是按假设继续，还是追加 1 个定点问题完成收口。
+- 问答结束后，默认由主代理直接综合；如果需要多视角分析，再按分析模式将已完成轮次的文档分发给多个分析子代理，并生成综合方案。
+- 仅在用户显式授权或确认后才启用真实分析子代理；否则仍由主代理在当前线程内完成对应视角分析。
 - 将确认后的 PRD 写入 `docs/<version>/prd.md`。
 - 在离开 PRD 阶段前等待用户确认。
 
@@ -89,9 +91,9 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 
 - 只读取当前 phase 所需的文档。
 - 始终优先读取 `docs/project-memory.md`，再加载当前 phase 所需的文档。
-- 使用 `references/workflow.md` 获取完整的 phase 规则、manifest 结构、检查点与模板语义。
+- 使用 `references/workflow.md` 获取全局结构、manifest 与导航；使用 `references/phases/*.md` 获取当前阶段规则；使用 `references/shared.md` 获取横切规则。
 - 头脑风暴轮次只加载当前轮必要上下文和前序轮次 round 文档摘要。
-- 分析角色只加载已完成的 round 文档和相关项目级记忆摘要，不加载其他角色分析、代码文件或完整 PRD。
+- 分析子代理只加载已完成的 round 文档和相关项目级记忆摘要，不加载其他视角分析、代码文件或完整 PRD。
 - 执行期优先读取 `tasks/index.md` 中的摘要，再只打开当前任务目录下的 `task.md` 与 `memory.md`，不要回放整份任务历史。
 - 项目级记忆文件必须持续保持精简，避免它本身演变成新的上下文负担。
 - 除非用户需要，不要在主回复中堆入头脑风暴原稿、原始命令输出或探索日志。
@@ -100,6 +102,8 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 ## 使用内置资源
 
 - `scripts/init_orchestrator.py`：将工作流目录、项目级记忆文件和头脑风暴 / 分析模板写入目标仓库。
-- `references/workflow.md`：完整的 phase 规则、manifest 结构、检查点、上下文边界和模板语义。
-- `references/subagents.md`：PRD 三方分析子代理与执行期子代理的使用边界、输入输出和调度协议。
+- `references/workflow.md`：全局结构、manifest、项目级记忆规则和阶段导航。
+- `references/phases/`：按阶段拆分的执行细则。
+- `references/shared.md`：上下文边界、用户检查点和 Git 规范等横切规则。
+- `references/subagents.md`：PRD 多视角分析子代理与执行期子代理的使用边界、输入输出和调度协议。
 - `assets/docs/`：初始化脚本复制到目标仓库中的模板文件。
