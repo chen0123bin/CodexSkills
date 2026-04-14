@@ -11,7 +11,7 @@
 ## 阶段目标
 
 - 按任务粒度推进代码实现
-- 通过 task memory 保持局部上下文
+- 通过单个 task 文档保持局部上下文
 - 在不回放全量历史的前提下完成开发、审查、验证和进度更新
 
 ## 触发条件
@@ -31,12 +31,12 @@
 
 1. 读取 `docs/project-memory.md`
 2. 读取 `docs/v{X}/plan.md` 和 `docs/v{X}/tasks/index.md`
-3. 选取下一个可执行的 task，并打开对应的 `docs/v{X}/tasks/T{XXX}/task.md` 与 `docs/v{X}/tasks/T{XXX}/memory.md`
+3. 选取下一个可执行的 task，并打开对应的 `docs/v{X}/tasks/task001.md` 这类单任务文件
 4. 将 task 状态更新为 `in_progress`
 5. 准备任务上下文：
    - 与当前任务直接相关的项目级记忆摘要
    - 当前 task 的完整描述和 done criteria
-   - 当前 task `memory.md` 中保留的已知事实与历史变更摘要
+   - 当前 task 文件中保留的执行记录、验证记录和阻塞摘要
    - 相关代码文件路径
    - 相关 milestone 的必要背景
    - 已完成相关 task 的摘要
@@ -46,11 +46,11 @@
 - 子代理模式：把任务上下文包传给 `developer`
 - 默认模式：由主代理自己完成当前 task 的代码开发、测试和最小必要验证
 - 如果开发阶段发现缺少必要信息或真实技术阻塞，将 task 标记为 `blocked`
-- 开发过程中持续更新当前 task 的 `memory.md`，记录实际修改文件、变更内容摘要和新的局部约束
+- 开发过程中持续更新当前 task 文件，记录实际修改文件、变更内容摘要和新的局部约束
 
 ### Step 3：审查
 
-- 子代理模式：把当前 task 描述、done criteria、当前 task 的 `memory.md`、代码变更和开发结果传给 `reviewer`
+- 子代理模式：把当前 task 描述、done criteria、当前 task 文件、代码变更和开发结果传给 `reviewer`
 - 默认模式：由主代理按 `reviewer` 的审查标准对当前改动做自审
 - 根据审查结果分流：
   - `APPROVED`：进入 Step 4
@@ -63,10 +63,9 @@
 2. 运行项目已有的测试、lint、build 命令（如果存在）
 3. 验证 done criteria 是否满足
 4. 检查是否引入了对其他模块的破坏性变更
-5. 更新当前 task 的 `task.md`，将状态更新为 `done`，并记录完成时间
-6. 更新当前 task 的 `memory.md`，补充最终修改文件清单、验证结论和交接摘要
-7. 更新 `tasks/index.md` 中该任务的摘要状态
-8. 更新 `progress.md`
+5. 更新当前 task 文件，将状态更新为 `done`，并补充最终修改文件清单、验证结论和交接摘要
+6. 更新 `tasks/index.md` 中该任务的摘要状态
+7. 更新 `progress.md`
    - 更新该 task 所属 milestone 的完成百分比
    - 如果 milestone 下所有 task 都 `done`，将 milestone 标记为 `completed`
    - 更新整体项目进度
@@ -82,4 +81,4 @@
 - 开发与审查的返工循环最多进行 2 次，仍未收敛则标记为 `blocked`
 - 全量验证失败时，先尝试自动修复一次；仍失败则标记为 `blocked`
 - 连续 3 个 task 被标记为 `blocked` 时，暂停执行并请求用户介入
-- 任务被标记为 `blocked` 时，也要同步更新该任务目录中的 `memory.md`，明确阻塞原因、已修改文件和待用户决策点
+- 任务被标记为 `blocked` 时，也要同步更新该任务文件，明确阻塞原因、已修改文件和待用户决策点

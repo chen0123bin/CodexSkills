@@ -11,8 +11,8 @@
 - **已完成任务**: {N} / {总数}
 - **阻塞任务**: {N}
 - **任务索引**: `v{X}/tasks/index.md`
-- **当前活跃任务**: T{XXX} - {标题}
-- **当前活跃任务文件**: `v{X}/tasks/T{XXX}/task.md`
+- **当前活跃任务**: task{XXX} - {标题}
+- **当前活跃任务文件**: `v{X}/tasks/task{XXX}.md`
 
 ---
 
@@ -48,5 +48,5 @@
 | 时间（本地） | 事件 |
 |------|------|
 | {datetime} | 项目初始化，{N} 个 milestone，{N} 个 task |
-| {datetime} | T001 完成 |
+| {datetime} | task001 完成 |
 | {datetime} | M1 完成 |

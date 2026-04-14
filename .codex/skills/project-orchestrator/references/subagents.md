@@ -113,7 +113,7 @@ PRD 阶段支持以下分析模式：
 3. 调度 `developer`
 4. 调度 `reviewer`
 5. 根据审查结果决定通过、返工或阻塞
-6. 做最终验证并更新 `tasks/index.md`、当前 task 的 `task.md` / `memory.md`、`progress.md`
+6. 做最终验证并更新 `tasks/index.md`、当前 task 文件、`progress.md`
 
 ### `developer`
 
@@ -124,7 +124,7 @@ PRD 阶段支持以下分析模式：
 3. `project_memory`
 4. `related_files`
 5. `milestone_context`
-6. `task_memory`
+6. `task_document`
 7. `review_feedback`（仅返工时提供）
 
 职责：
@@ -133,7 +133,7 @@ PRD 阶段支持以下分析模式：
 - 补充必要测试
 - 返回 `DONE` 或 `BLOCKED`
 - 报告改动文件、测试情况和需要注意的事项
-- 为主代理更新当前 task 的 `memory.md` 提供结构化事实摘要
+- 为主代理更新当前 task 文件提供结构化事实摘要
 
 ### `reviewer`
 
@@ -142,7 +142,7 @@ PRD 阶段支持以下分析模式：
 1. `task_description`
 2. `done_criteria`
 3. `project_memory`
-4. `task_memory`
+4. `task_document`
 5. `code_changes`
 6. `developer_report`
 
@@ -152,7 +152,7 @@ PRD 阶段支持以下分析模式：
 - 返回 `APPROVED`、`NEEDS_CHANGES` 或 `REJECTED`
 - 提供具体修改建议或根本性问题说明
 - 优先基于相关项目级记忆检查是否违反长期约束、偏好或已确认决策
-- 优先基于当前 task 的 `memory.md` 快速理解既有改动，不要求重新扫描完整任务列表
+- 优先基于当前 task 文件中的执行记录快速理解既有改动，不要求重新扫描完整任务列表
 
 ## 调度协议
 

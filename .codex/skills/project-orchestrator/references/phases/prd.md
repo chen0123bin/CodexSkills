@@ -54,7 +54,7 @@
 主代理不得按固定维度机械追问，而要从“当前最阻塞后续决策的未知项”开始，一次只推进一个澄清性问题。
 如果目标、约束、验收标准已经足够清晰，应立即停止追问，而不是为了凑轮次继续发问。
 
-每一轮使用 `docs/.templates/brainstorm-round-template.md` 维护单一文档 `docs/v{X}/brainstorm/round-{N}.md`，并至少包含：
+每一轮使用 `docs/.templates/discovery-round-template.md` 维护单一文档 `docs/v{X}/discovery/round-{N}.md`，并至少包含：
 
 - 与当前轮直接相关的项目级记忆引用
 - 当前问题对应的主题、阻塞点与优先级
@@ -63,6 +63,7 @@
 - 2-3 种候选做法或答案方向
 - 各候选做法的权衡
 - 主代理建议与建议原因
+- 必要时补充的 ASCII 草图或 ASCII 流程图
 - 用户选择或补充回答
 - 本轮确认结论
 - 仍未确认的点
@@ -73,6 +74,8 @@
 - 每轮只问 1 个澄清性问题，避免一次抛出多个开放问题
 - 每个问题都要给出 2-3 种候选做法、各自权衡和主代理建议，方便用户直接选择、修改或补充
 - 优先使用互斥或可比较的选项，必要时允许用户补充自由文本
+- 当文本不足以清晰表达页面布局、模块边界、信息结构、流程分支或状态流转时，应优先补充简洁 ASCII 草图或 ASCII 流程图辅助澄清
+- ASCII 图示只服务于消除歧义，不追求视觉精美；探索性图示保留在 round 文档中
 - 如果新回答推翻前序结论，必须在当前 `round-{N}.md` 中明确写出被覆盖项与原因
 
 ### 澄清预算与结束规则
@@ -103,9 +106,9 @@
 然后将所有已完成的 round 文档作为统一输入分发给各视角子代理，典型包括：
 
 - `docs/project-memory.md`
-- `docs/v{X}/brainstorm/round-1.md`
-- `docs/v{X}/brainstorm/round-2.md`
-- 其他已完成的 `docs/v{X}/brainstorm/round-{N}.md`
+- `docs/v{X}/discovery/round-1.md`
+- `docs/v{X}/discovery/round-2.md`
+- 其他已完成的 `docs/v{X}/discovery/round-{N}.md`
 
 真实子代理模式下，各视角必须互相不可见对方输出，且禁止传入：
 
@@ -115,11 +118,11 @@
 
 若启用多视角分析，将结果写入：
 
-- `docs/v{X}/brainstorm/analysis/perspective-1-proposal.md`
-- `docs/v{X}/brainstorm/analysis/perspective-2-proposal.md`
-- `docs/v{X}/brainstorm/analysis/perspective-3-proposal.md`
+- `docs/v{X}/discovery/analysis/perspective-1-proposal.md`
+- `docs/v{X}/discovery/analysis/perspective-2-proposal.md`
+- `docs/v{X}/discovery/analysis/perspective-3-proposal.md`
 
-主代理收到所有已启用视角的分析后，使用 `docs/.templates/analysis-summary-template.md` 生成 `docs/v{X}/brainstorm/analysis/analysis-summary.md`，并至少包含：
+主代理收到所有已启用视角的分析后，使用 `docs/.templates/analysis-summary-template.md` 生成 `docs/v{X}/discovery/analysis/analysis-summary.md`，并至少包含：
 
 - 共识提取：已启用视角都同意的结论
 - 分歧识别：逐项列出冲突点和各视角立场
@@ -135,14 +138,14 @@
 - 2-3 个综合方案
 - 主代理的协调者推荐
 
-等待用户确认后，将最终选择写入 `docs/v{X}/brainstorm/analysis/consolidated.md`。
+等待用户确认后，将最终选择写入 `docs/v{X}/discovery/analysis/consolidated.md`。
 `consolidated.md` 只保留供 PRD 生成使用的最终决策，不重复完整分析过程。
 
 ## Step 3：生成 PRD
 
-- 基于 `docs/project-memory.md`、已完成的 `round-{N}.md` 和 `docs/v{X}/brainstorm/analysis/consolidated.md` 生成 `docs/v{X}/prd.md`
-- PRD 必须包含新增章节“问答与分析决策记录”
-- PRD 中记录实际完成轮次的问答结论、多视角分析共识与分歧、最终决策理由和被否决的重要方案
+- 基于 `docs/project-memory.md`、已完成的 `round-{N}.md` 和 `docs/v{X}/discovery/analysis/consolidated.md` 生成 `docs/v{X}/prd.md`
+- PRD 必须包含新增章节“澄清、图示与分析决策记录”
+- PRD 中记录实际完成轮次的问答结论、关键 ASCII 图示摘要、多视角分析共识与分歧、最终决策理由和被否决的重要方案
 - 生成 PRD 后必须等待用户确认，不能自动进入下一阶段
 
 ## Step 4：更新状态
@@ -154,6 +157,7 @@
 - Step 1 先做主代理自分析，再按需完成有限轮单题澄清
 - 只有在目标、约束、验收标准足以稳定生成 PRD 时，才允许结束 Step 1
 - 每轮只允许提出 1 个澄清性问题，且必须附带 2-3 种候选做法、权衡和主代理建议
+- ASCII 草图与 ASCII 流程图是可选澄清工具；当结构或流程存在歧义时，应优先使用
 - Step 2 只进行 1 轮综合分析，不在各视角之间来回辩论
 - 真实子代理模式下，各视角必须独立分析，不可互相看到对方输出
 - 默认分析模式为 `solo`，不要把多视角分析当成强制步骤

@@ -20,18 +20,17 @@ docs/
 ├── project-memory.md
 ├── .templates/
 │   ├── analysis-summary-template.md
-│   ├── brainstorm-round-template.md
+│   ├── discovery-round-template.md
 │   ├── delivery-template.md
 │   ├── plan-template.md
 │   ├── project-memory-template.md
 │   ├── prd-template.md
 │   ├── progress-template.md
 │   ├── task-index-template.md
-│   ├── task-item-template.md
-│   └── task-memory-template.md
+│   └── task-template.md
 ├── manifest.yaml
 └── v1.0/
-    └── brainstorm/
+    └── discovery/
 ```
 
 随着工作流推进，再逐步创建当前版本下的 `prd.md`、`plan.md`、`tasks/`、`progress.md` 和 `delivery.md`：
@@ -41,15 +40,14 @@ docs/
 ├── project-memory.md
 ├── .templates/
 │   ├── analysis-summary-template.md
-│   ├── brainstorm-round-template.md
+│   ├── discovery-round-template.md
 │   ├── delivery-template.md
 │   ├── plan-template.md
 │   ├── project-memory-template.md
 │   ├── prd-template.md
 │   ├── progress-template.md
 │   ├── task-index-template.md
-│   ├── task-item-template.md
-│   └── task-memory-template.md
+│   └── task-template.md
 ├── manifest.yaml
 └── v1.0/
     ├── prd.md
@@ -57,13 +55,9 @@ docs/
     ├── progress.md
     ├── tasks/
     │   ├── index.md
-    │   ├── T001/
-    │   │   ├── task.md
-    │   │   └── memory.md
-    │   └── T002/
-    │       ├── task.md
-    │       └── memory.md
-    ├── brainstorm/
+    │   ├── task001.md
+    │   └── task002.md
+    ├── discovery/
     │   ├── round-1.md
     │   ├── round-2.md
     │   ├── ... 按需追加更多 round 文档
@@ -138,7 +132,7 @@ versions:
 2. 将模板文件写入 `docs/.templates/`
 3. 创建 `docs/project-memory.md`
 4. 创建 `docs/manifest.yaml`
-5. 创建 `docs/v1.0/` 和 `docs/v1.0/brainstorm/`
+5. 创建 `docs/v1.0/` 和 `docs/v1.0/discovery/`
 6. 然后进入 Phase 1
 
 如果只需要创建基础结构，直接运行 `scripts/init_orchestrator.py` 即可。
@@ -151,7 +145,7 @@ versions:
 2. 将模板文件写入 `docs/.templates/`
 3. 创建 `docs/project-memory.md`
 4. 创建 `docs/manifest.yaml`
-5. 创建 `docs/v1.0/` 和 `docs/v1.0/brainstorm/`
+5. 创建 `docs/v1.0/` 和 `docs/v1.0/discovery/`
 6. 然后进入 Phase 1
 
 如果只需要创建基础结构，直接运行 `scripts/init_orchestrator.py` 即可。
@@ -184,4 +178,5 @@ versions:
 - `shared.md` 只保留横切规则，例如上下文边界、用户检查点和 Git 规范
 - PRD 分析默认使用 `solo`，只在需要时升级到多视角分析；具体视角由主代理按项目上下文定义
 - PRD 澄清默认采用有限轮、单题推进的机制，不预设固定 R1 / R2 / R3 维度顺序
+- 当文本不足以清晰表达结构或流程时，优先在 discovery 轮次中使用 ASCII 草图或 ASCII 流程图辅助澄清
 - 不要在多个 references 文件中重复维护同一段规则，避免后续漂移

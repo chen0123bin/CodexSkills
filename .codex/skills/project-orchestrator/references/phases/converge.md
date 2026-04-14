@@ -23,7 +23,7 @@
 2. 先读取 `docs/project-memory.md`
 3. 生成 `docs/v{X}/plan.md`
 4. 生成 `docs/v{X}/tasks/index.md`
-5. 为每个 task 创建 `docs/v{X}/tasks/T{XXX}/task.md` 和 `docs/v{X}/tasks/T{XXX}/memory.md`
+5. 为每个 task 创建 `docs/v{X}/tasks/task001.md` 这类单任务文件
 6. 生成 `docs/v{X}/progress.md`
 7. 向用户展示 plan 概览和 task 索引
 8. 将 `manifest.yaml` 中 `current_phase` 更新为 `execute`
@@ -43,7 +43,7 @@
 - 标注 `depends_on` 关系
 - 标注哪些 task 可以并行
 - `tasks/index.md` 只保留任务级摘要、状态、依赖和入口路径，不堆叠完整任务细节
-- 每个 `tasks/T{XXX}/memory.md` 只记录已发生的事实，包括修改过的文件、变更摘要、关键决策和验证结果
+- 每个 `tasks/task001.md` 必须同时包含任务定义、执行记录、验证记录和阻塞说明，避免拆分出额外记忆文件
 
 ## 用户交互
 

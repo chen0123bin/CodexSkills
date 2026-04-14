@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Initialize a docs-first project orchestration workflow in a target repository.
-"""
+"""初始化一个基于文档的项目编排工作流。"""
 
 from __future__ import annotations
 
@@ -26,14 +24,13 @@ class FileTemplate:
 
 FILE_TEMPLATES = [
     FileTemplate("docs/.templates/analysis-summary-template.md", "docs/.templates/analysis-summary-template.md"),
-    FileTemplate("docs/.templates/brainstorm-round-template.md", "docs/.templates/brainstorm-round-template.md"),
+    FileTemplate("docs/.templates/discovery-round-template.md", "docs/.templates/discovery-round-template.md"),
     FileTemplate("docs/.templates/project-memory-template.md", "docs/.templates/project-memory-template.md"),
     FileTemplate("docs/.templates/project-memory-template.md", "docs/project-memory.md", render_as_project_memory=True),
     FileTemplate("docs/.templates/prd-template.md", "docs/.templates/prd-template.md"),
     FileTemplate("docs/.templates/plan-template.md", "docs/.templates/plan-template.md"),
     FileTemplate("docs/.templates/task-index-template.md", "docs/.templates/task-index-template.md"),
-    FileTemplate("docs/.templates/task-item-template.md", "docs/.templates/task-item-template.md"),
-    FileTemplate("docs/.templates/task-memory-template.md", "docs/.templates/task-memory-template.md"),
+    FileTemplate("docs/.templates/task-template.md", "docs/.templates/task-template.md"),
     FileTemplate("docs/.templates/progress-template.md", "docs/.templates/progress-template.md"),
     FileTemplate("docs/.templates/delivery-template.md", "docs/.templates/delivery-template.md"),
     FileTemplate("docs/manifest.yaml.tmpl", "docs/manifest.yaml"),
@@ -41,6 +38,7 @@ FILE_TEMPLATES = [
 
 
 def parse_args() -> argparse.Namespace:
+    """解析命令行参数。"""
     parser = argparse.ArgumentParser(
         description="Scaffold docs-first project orchestration files into a repository.",
     )
@@ -73,20 +71,24 @@ def parse_args() -> argparse.Namespace:
 
 
 def local_timestamp() -> str:
+    """生成本地时区的统一时间戳字符串。"""
     return datetime.now().astimezone().replace(microsecond=0).strftime(LOCAL_TIMESTAMP_FORMAT)
 
 
 def normalize_project_name(repo_root: Path, raw_name: str) -> str:
+    """标准化项目名称，优先使用用户输入，其次使用仓库目录名。"""
     candidate = raw_name.strip() or repo_root.name.strip() or "project"
     return candidate
 
 
 def validate_version(version: str) -> None:
+    """校验版本号是否符合 v<major>.<minor> 约定。"""
     if not VERSION_RE.match(version):
         raise ValueError("Version must match v<major>.<minor>, for example v1.0")
 
 
 def render_template(text: str, replacements: dict[str, str]) -> str:
+    """按占位符映射渲染普通模板文本。"""
     rendered = text
     for key, value in replacements.items():
         rendered = rendered.replace(f"{{{{{key}}}}}", value)
@@ -94,6 +96,7 @@ def render_template(text: str, replacements: dict[str, str]) -> str:
 
 
 def render_project_memory(text: str, project_name: str, timestamp: str) -> str:
+    """渲染项目级记忆模板，并写入初始化默认条目。"""
     rendered = text
     rendered = rendered.replace("{项目名称}", project_name)
     rendered = rendered.replace("{date}", timestamp)
@@ -105,6 +108,7 @@ def render_project_memory(text: str, project_name: str, timestamp: str) -> str:
 
 
 def ensure_directory(path: Path, dry_run: bool) -> None:
+    """按需创建目录，并在 dry-run 模式下仅输出计划动作。"""
     if path.exists():
         print(f"[skip] dir  {path}")
         return
@@ -121,6 +125,7 @@ def write_file(
     dry_run: bool,
     render_as_project_memory: bool,
 ) -> None:
+    """将模板渲染后写入目标文件，必要时覆盖已有内容。"""
     exists = destination_path.exists()
     if exists and not force:
         print(f"[skip] file {destination_path}")
@@ -141,6 +146,7 @@ def write_file(
 
 
 def main() -> int:
+    """执行初始化主流程，生成 docs 工作流骨架。"""
     args = parse_args()
 
     repo_root = Path(args.repo_root).resolve()
@@ -180,7 +186,7 @@ def main() -> int:
     ensure_directory(repo_root / "docs", args.dry_run)
     ensure_directory(repo_root / "docs" / ".templates", args.dry_run)
     ensure_directory(repo_root / "docs" / args.version, args.dry_run)
-    ensure_directory(repo_root / "docs" / args.version / "brainstorm", args.dry_run)
+    ensure_directory(repo_root / "docs" / args.version / "discovery", args.dry_run)
 
     for template in FILE_TEMPLATES:
         source_path = template_root / template.source

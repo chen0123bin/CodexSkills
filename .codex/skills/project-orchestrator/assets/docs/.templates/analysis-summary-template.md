@@ -7,9 +7,9 @@
 ## 输入来源
 
 - 相关的 `project-memory.md` 条目
-- 已完成的 `brainstorm/round-1.md`
-- 已完成的 `brainstorm/round-2.md`
-- 已完成的 `brainstorm/round-3.md`
+- 已完成的 `discovery/round-1.md`
+- 已完成的 `discovery/round-2.md`
+- 其他已完成的 `discovery/round-{N}.md`
 
 ---
 
@@ -26,17 +26,17 @@
 ## 视角分析摘要
 
 ### 视角 1: {视角名称}
-> 来源: `brainstorm/analysis/perspective-1-proposal.md`
+> 来源: `discovery/analysis/perspective-1-proposal.md`
 
 {该视角的分析摘要}
 
 ### 视角 2: {视角名称}
-> 来源: `brainstorm/analysis/perspective-2-proposal.md`
+> 来源: `discovery/analysis/perspective-2-proposal.md`
 
 {该视角的分析摘要}
 
 ### 视角 3: {视角名称}
-> 来源: `brainstorm/analysis/perspective-3-proposal.md`
+> 来源: `discovery/analysis/perspective-3-proposal.md`
 
 {该视角的分析摘要}
 
