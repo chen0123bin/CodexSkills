@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bugfix 编排器"
+  short_description: "在当前版本下执行文档驱动的缺陷分析、修复和验证流程"
+  default_prompt: "使用 $bugfix-orchestrator 在当前版本下创建或更新 docs/<version>/fix/ 缺陷工件，完成问题分析、修复推进和验证沉淀。"

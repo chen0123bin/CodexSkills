@@ -1,6 +1,6 @@
 # 需求澄清：Round {N} - {主题名称}
 
-> 版本: v{X} | 时间: {date} | 状态: questioning / answered / confirmed | 时间格式: 本地时间 `【YYYY-MM-DD HH:MM:SS】`
+> 版本: v{X} | 时间: {date} | 状态: questioning / answered / confirmed | 时间格式: 本地时间 `yyyy-MM-dd HH:mm:ss`
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: project-orchestrator
-description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 有限轮澄清问答 + 可选多视角子代理分析驱动的 PRD→plan/task/progress→delivery 项目编排流程。适用于需要在仓库中维护 docs/project-memory.md、docs/manifest.yaml、docs/.templates/、版本化 docs/vX.Y/ 工件、先做需求澄清与可选多视角分析、再进行计划拆解、以 tasks/ 目录管理任务索引与单任务文件、执行跟踪、交付总结与版本迭代的场景。
+description: 在 Codex 中初始化并驱动基于文档的轻量项目编排工作流。适用于需要在仓库中维护 docs/project-memory.md、docs/manifest.yaml、docs/.templates/、版本化 docs/vX.Y/ 工件、先做需求澄清与可选多视角分析，再通过 plan.md、progress.md 和 tasks/task001.md 这类单任务文件推进执行、跟踪和交付总结的场景。
 ---
 
 # 项目编排器
@@ -10,7 +10,8 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 使用这个技能在当前仓库中运行一套以文档为中心的项目工作流。
 将这套流程视为“调用本技能时生效”的方法论，并把所有状态与工件都收敛到 `docs/` 目录中。
 项目级长期记忆统一收敛到 `docs/project-memory.md`，每次启动都要优先读取它，再进入当前 phase 的具体文档。
-执行阶段使用 `docs/<version>/tasks/index.md` 维护任务索引，并为每个任务创建独立的 `task001.md` 这类单任务文件，在同一文件内维护定义、执行记录和验证结果。
+执行阶段使用 `docs/<version>/progress.md` 维护任务摘要与全局进度，并为每个任务创建独立的 `task001.md` 这类单任务文件，在同一文件内维护定义、执行记录和验证结果。
+Git 工作流采用“版本级执行分支”模式：执行阶段先检查当前 Git 状态，再创建或复用当前版本的执行分支；交付阶段再合并回基线分支并删除执行分支。
 
 ## 快速开始
 
@@ -27,8 +28,9 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 - 根据 `docs/manifest.yaml` 中记录的阶段决定下一步动作。
 - 将工作流产物限定在 `docs/` 和版本化的 `docs/vX.Y/` 目录中。
 - 每次启动先读取 `docs/project-memory.md`，它是跨阶段、跨版本共享的高优先级项目记忆。
-- 所有时间字段统一使用本地时区格式 `【YYYY-MM-DD HH:MM:SS】`。
+- 所有时间字段统一使用本地时区格式 `yyyy-MM-dd HH:mm:ss`。
 - 执行阶段的任务工件统一放在 `docs/<version>/tasks/` 中，按 `tasks/task001.md` 这类单任务文件局部加载。
+- Git 分支状态统一记录在 `docs/manifest.yaml` 中当前版本条目的 `base_branch` 与 `execute_branch` 字段。
 - 让主线程专注于需求、决策和面向用户的总结。
 - PRD 阶段先由主代理做详细需求分析，整理目标、约束、验收标准与关键未知项，再按需完成有限轮单题澄清，最后按分析模式决定是否启用多视角子代理分析。
 - 默认优先单代理执行；只有分析阶段经用户授权，或执行阶段用户明确要求子代理时，才实际调度子代理。
@@ -58,19 +60,24 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 ### 收敛阶段
 
 - 先读取 `docs/project-memory.md`，再读取 `docs/<version>/prd.md`。
-- 基于内置模板生成 `plan.md`、`tasks/index.md`、每个任务的独立 `task001.md` 这类单任务文件，以及 `progress.md`。
+- 基于内置模板生成 `plan.md`、每个任务的独立 `task001.md` 这类单任务文件，以及 `progress.md`。
+- 一个版本通常拆成 3 到 10 个 task；如果明显小于 3 个 task，优先先判断这次改动是否值得进入完整工作流。
+- 将 `manifest.yaml` 中当前版本条目的 `base_branch` 初始化为进入执行前的基线分支；`execute_branch` 初始留空，待执行阶段创建后回填。
 - 可以建议用户确认，但也允许用户直接进入执行阶段。
 
 ### 执行阶段
 
-- 先读取 `docs/project-memory.md`，再读取当前里程碑、当前任务文件，以及相关代码。
-- 随着工作推进更新当前任务文件和 `progress.md`，必要时同步更新 `tasks/index.md`。
+- 先读取 `docs/project-memory.md`、`manifest.yaml`，再读取 `progress.md`、当前任务文件，以及相关代码。
+- 进入执行阶段前先检查 `git status --short --branch`，按当前版本在 `manifest.yaml` 中记录的 `base_branch` / `execute_branch` 创建或复用执行分支。
+- 如果工作区在非当前版本执行分支上存在未提交改动，不自动 stash、reset 或提交，先暂停并由用户决定如何处理。
+- 随着工作推进更新当前任务文件和 `progress.md`。
 - 尽量把任务控制在一次 Codex 执行可完成的规模内，约 5 个文件以内，并带有清晰的完成标准。
 
 ### 交付阶段
 
-- 先读取 `docs/project-memory.md`，再汇总当前版本的交付情况。
+- 先读取 `docs/project-memory.md`、`manifest.yaml`，再汇总当前版本的交付情况。
 - 在 `delivery.md` 中总结已交付功能、变更文件、已知问题、技术债和测试覆盖情况。
+- 交付确认后切回 `base_branch`，合并 `execute_branch`；只有合并成功后才删除执行分支。
 - 在交付后给出下一版本的方向建议。
 
 ### 迭代阶段
@@ -95,7 +102,7 @@ description: 在 Codex 中初始化并驱动基于文档的主代理自分析 + 
 - 使用 `references/workflow.md` 获取全局结构、manifest 与导航；使用 `references/phases/*.md` 获取当前阶段规则；使用 `references/shared.md` 获取横切规则。
 - discovery 轮次只加载当前轮必要上下文和前序轮次 round 文档摘要。
 - 分析子代理只加载已完成的 round 文档和相关项目级记忆摘要，不加载其他视角分析、代码文件或完整 PRD。
-- 执行期优先读取 `tasks/index.md` 中的摘要，再只打开当前任务文件，不要回放整份任务历史。
+- 执行期优先读取 `progress.md` 中的任务摘要，再只打开当前任务文件，不要回放整份任务历史。
 - 项目级记忆文件必须持续保持精简，避免它本身演变成新的上下文负担。
 - 除非用户需要，不要在主回复中堆入 discovery 原稿、原始命令输出或探索日志。
 - 优先总结中间结果，而不是直接粘贴噪声内容。

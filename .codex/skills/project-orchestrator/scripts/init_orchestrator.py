@@ -8,11 +8,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 
 VERSION_RE = re.compile(r"^v\d+\.\d+$")
-LOCAL_TIMESTAMP_FORMAT = "【%Y-%m-%d %H:%M:%S】"
+LOCAL_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 @dataclass(frozen=True)
@@ -29,7 +30,6 @@ FILE_TEMPLATES = [
     FileTemplate("docs/.templates/project-memory-template.md", "docs/project-memory.md", render_as_project_memory=True),
     FileTemplate("docs/.templates/prd-template.md", "docs/.templates/prd-template.md"),
     FileTemplate("docs/.templates/plan-template.md", "docs/.templates/plan-template.md"),
-    FileTemplate("docs/.templates/task-index-template.md", "docs/.templates/task-index-template.md"),
     FileTemplate("docs/.templates/task-template.md", "docs/.templates/task-template.md"),
     FileTemplate("docs/.templates/progress-template.md", "docs/.templates/progress-template.md"),
     FileTemplate("docs/.templates/delivery-template.md", "docs/.templates/delivery-template.md"),
@@ -85,6 +85,29 @@ def validate_version(version: str) -> None:
     """校验版本号是否符合 v<major>.<minor> 约定。"""
     if not VERSION_RE.match(version):
         raise ValueError("Version must match v<major>.<minor>, for example v1.0")
+
+
+def detect_git_branch(repo_root: Path) -> str:
+    """检测仓库当前 Git 分支，检测失败时返回空字符串。"""
+    if not (repo_root / ".git").exists():
+        return ""
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+    branch = result.stdout.strip()
+    if not branch or branch == "HEAD":
+        return ""
+    return branch
 
 
 def render_template(text: str, replacements: dict[str, str]) -> str:
@@ -153,6 +176,7 @@ def main() -> int:
     validate_version(args.version)
     project_name = normalize_project_name(repo_root, args.project_name)
     timestamp = local_timestamp()
+    base_branch = detect_git_branch(repo_root)
 
     skill_root = Path(__file__).resolve().parent.parent
     template_root = skill_root / "assets"
@@ -165,11 +189,13 @@ def main() -> int:
         "PROJECT_NAME": project_name,
         "VERSION": args.version,
         "TIMESTAMP": timestamp,
+        "BASE_BRANCH": base_branch,
     }
 
     print(f"Repository root: {repo_root}")
     print(f"Project name: {project_name}")
     print(f"Version: {args.version}")
+    print(f"Base branch: {base_branch or '(not detected)'}")
     if args.dry_run:
         print("Mode: dry-run")
     elif args.force:

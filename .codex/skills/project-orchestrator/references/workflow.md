@@ -5,7 +5,7 @@
 整个项目遵循五阶段流水线，并按顺序推进：
 
 ```text
-PRD（需求定义）→ 收敛（生成 plan/tasks/progress）→ 执行循环 → 交付 → 版本迭代
+PRD（需求定义）→ 收敛（生成 plan/progress/task）→ 执行循环 → 交付 → 版本迭代
 ```
 
 每次启动时，先读取 `docs/project-memory.md`，再读取 `docs/manifest.yaml` 判断当前阶段和活跃版本，从断点恢复。
@@ -26,7 +26,6 @@ docs/
 │   ├── project-memory-template.md
 │   ├── prd-template.md
 │   ├── progress-template.md
-│   ├── task-index-template.md
 │   └── task-template.md
 ├── manifest.yaml
 └── v1.0/
@@ -46,7 +45,6 @@ docs/
 │   ├── project-memory-template.md
 │   ├── prd-template.md
 │   ├── progress-template.md
-│   ├── task-index-template.md
 │   └── task-template.md
 ├── manifest.yaml
 └── v1.0/
@@ -54,7 +52,6 @@ docs/
     ├── plan.md
     ├── progress.md
     ├── tasks/
-    │   ├── index.md
     │   ├── task001.md
     │   └── task002.md
     ├── discovery/
@@ -78,18 +75,20 @@ docs/
 project_name: "Example Project"
 current_version: "v1.0"
 current_phase: "prd"
-created_at: "【2026-03-27 22:00:00】"
+created_at: "2026-03-27 22:00:00"
 versions:
   v1.0:
     status: "active"
     phase: "prd"
-    started_at: "【2026-03-27 22:00:00】"
+    base_branch: "master"
+    execute_branch: ""
+    started_at: "2026-03-27 22:00:00"
     completed_at: ""
 ```
 
 ### 时间格式
 
-- 所有时间字段统一使用本地时区格式 `【YYYY-MM-DD HH:MM:SS】`
+- 所有时间字段统一使用本地时区格式 `yyyy-MM-dd HH:mm:ss`
 - `created_at`、`started_at`、`completed_at` 以及各类文档中的时间字段都遵循这一格式
 
 ### 字段含义
@@ -97,6 +96,8 @@ versions:
 - `current_phase`：取值为 `prd`、`converge`、`execute` 或 `deliver`
 - `versions.<version>.status`：取值为 `active` 或 `completed`
 - `versions.<version>.phase`：该版本当前记录下来的阶段快照
+- `versions.<version>.base_branch`：当前版本进入执行阶段时所基于的分支
+- `versions.<version>.execute_branch`：当前版本执行阶段实际使用的分支；尚未创建时为空字符串
 
 ## 项目级记忆
 
@@ -137,19 +138,6 @@ versions:
 
 如果只需要创建基础结构，直接运行 `scripts/init_orchestrator.py` 即可。
 
-## Phase 0：项目初始化
-
-当 `docs/manifest.yaml` 不存在时执行：
-
-1. 创建 `docs/` 和 `docs/.templates/`
-2. 将模板文件写入 `docs/.templates/`
-3. 创建 `docs/project-memory.md`
-4. 创建 `docs/manifest.yaml`
-5. 创建 `docs/v1.0/` 和 `docs/v1.0/discovery/`
-6. 然后进入 Phase 1
-
-如果只需要创建基础结构，直接运行 `scripts/init_orchestrator.py` 即可。
-
 ## 阶段导航
 
 将 `workflow.md` 视为总纲与导航，不要默认把所有 phase 细则一次性读入上下文。
@@ -176,6 +164,8 @@ versions:
 - `workflow.md` 只保留全局不变量、目录结构、manifest 结构和导航信息
 - phase 文件只保留当前阶段的执行规则
 - `shared.md` 只保留横切规则，例如上下文边界、用户检查点和 Git 规范
+- `progress.md` 是执行阶段的任务摘要入口，不再额外维护 `tasks/index.md`
+- Git 分支生命周期按“检查状态 → 创建或复用执行分支 → 交付合并 → 删除执行分支”推进
 - PRD 分析默认使用 `solo`，只在需要时升级到多视角分析；具体视角由主代理按项目上下文定义
 - PRD 澄清默认采用有限轮、单题推进的机制，不预设固定 R1 / R2 / R3 维度顺序
 - 当文本不足以清晰表达结构或流程时，优先在 discovery 轮次中使用 ASCII 草图或 ASCII 流程图辅助澄清
