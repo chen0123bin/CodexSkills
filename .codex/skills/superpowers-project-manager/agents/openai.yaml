@@ -1,0 +1,4 @@
+interface:
+  display_name: "Superpowers Project Manager"
+  short_description: "按版本管理 superpowers 项目文档、状态和记忆。"
+  default_prompt: "使用 $superpowers-project-manager 启动或继续当前项目，读取项目记忆和 manifest，并按当前版本目录管理 superpowers 产物。"
