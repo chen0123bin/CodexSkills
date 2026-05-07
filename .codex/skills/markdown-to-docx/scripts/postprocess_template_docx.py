@@ -475,6 +475,78 @@ def patch_numbering(extracted_dir: str) -> None:
     tree.write(numbering_path, encoding="UTF-8", xml_declaration=True)
 
 
+def patch_list_paragraph_indents(extracted_dir: str) -> None:
+    """Write list indentation on each list paragraph to override body first-line indent."""
+    document_path = os.path.join(extracted_dir, "word", "document.xml")
+    numbering_path = os.path.join(extracted_dir, "word", "numbering.xml")
+    if not os.path.exists(document_path) or not os.path.exists(numbering_path):
+        return
+
+    document_tree = ET.parse(document_path)
+    document_root = document_tree.getroot()
+    numbering_root = ET.parse(numbering_path).getroot()
+
+    num_to_abs: dict[str, str] = {}
+    abstract_lookup: dict[str, ET.Element] = {}
+    for num in numbering_root.findall(qn("num")):
+        num_id = num.get(qn("numId"))
+        abs_el = num.find(qn("abstractNumId"))
+        abs_id = abs_el.get(qn("val")) if abs_el is not None else None
+        if num_id and abs_id:
+            num_to_abs[num_id] = abs_id
+    for absnum in numbering_root.findall(qn("abstractNum")):
+        abs_id = absnum.get(qn("abstractNumId"))
+        if abs_id:
+            abstract_lookup[abs_id] = absnum
+
+    for paragraph in document_root.findall(".//" + qn("p")):
+        ppr = first(paragraph, "w:pPr")
+        if ppr is None:
+            continue
+        numpr = first(ppr, "w:numPr")
+        if numpr is None:
+            continue
+        num_id_el = first(numpr, "w:numId")
+        if num_id_el is None:
+            continue
+        num_id = num_id_el.get(qn("val"), "")
+        abs_id = num_to_abs.get(num_id)
+        if not abs_id:
+            continue
+        absnum = abstract_lookup.get(abs_id)
+        if absnum is None:
+            continue
+        ilvl_el = first(numpr, "w:ilvl")
+        ilvl = ilvl_el.get(qn("val"), "0") if ilvl_el is not None else "0"
+        lvl = absnum.find(f"{qn('lvl')}[@{qn('ilvl')}='{ilvl}']")
+        if lvl is None:
+            continue
+
+        bullet_level = is_bullet_level(abs_id, lvl)
+        ordered_level = is_generic_ordered_level(lvl)
+        if not bullet_level and not ordered_level:
+            continue
+        try:
+            level = int(ilvl)
+        except ValueError:
+            level = 0
+        if bullet_level:
+            left = BULLET_LIST_BASE_LEFT + (level * LIST_LEVEL_STEP)
+        else:
+            left = ORDERED_LIST_BASE_LEFT + (level * LIST_LEVEL_STEP)
+
+        ind = first(ppr, "w:ind")
+        if ind is None:
+            ind = ET.SubElement(ppr, qn("ind"))
+        ind.set(qn("left"), str(left))
+        ind.set(qn("hanging"), str(LIST_HANGING))
+        # Direct paragraph indentation prevents Normal firstLine from stacking with numbering.
+        for attr in ("leftChars", "hangingChars", "firstLine", "firstLineChars"):
+            ind.attrib.pop(qn(attr), None)
+
+    document_tree.write(document_path, encoding="UTF-8", xml_declaration=True)
+
+
 def ensure_keep_next(ppr) -> None:
     keep_next = first(ppr, "w:keepNext")
     if keep_next is None:
@@ -569,6 +641,7 @@ def main() -> int:
 
         patch_doc_defaults(temp_dir, template_path)
         patch_numbering(temp_dir)
+        patch_list_paragraph_indents(temp_dir)
 
         default_header = resolve_default_header(temp_dir)
         if default_header and os.path.exists(default_header):

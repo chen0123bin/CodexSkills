@@ -1,0 +1,4 @@
+interface:
+  display_name: "de-ai-writing"
+  short_description: "在 good-writing 作者文风底座上做去AI味补丁"
+  default_prompt: "Use $de-ai-writing 给以下内容去除AI味。"

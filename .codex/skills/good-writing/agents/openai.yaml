@@ -1,0 +1,4 @@
+interface:
+  display_name: "good-writing"
+  short_description: "精确复现特定作者的中文写作风格"
+  default_prompt: "Use $good-writing 写一份关于xxx的文章。"

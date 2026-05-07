@@ -431,6 +431,7 @@ def post_check(docx_path: str) -> list[str]:
     # 8. List indentation should align with Chinese body-text first-line indent
     bullet_indent_issues = 0
     ordered_indent_issues = 0
+    list_paragraph_indent_issues = 0
     num_to_abs: dict[str, str] = {}
     abstract_lookup: dict[str, ET.Element] = {}
     for num in numbering.findall(f"{{{W}}}num"):
@@ -495,6 +496,16 @@ def post_check(docx_path: str) -> list[str]:
                 or ind.get(f"{{{W}}}hanging") != EXPECTED_BULLET_HANGING
             ):
                 ordered_indent_issues += 1
+        paragraph_ind = ppr.find(f"{{{W}}}ind")
+        if paragraph_ind is None:
+            list_paragraph_indent_issues += 1
+        elif (
+            paragraph_ind.get(f"{{{W}}}left") != expected_left
+            or paragraph_ind.get(f"{{{W}}}hanging") != EXPECTED_BULLET_HANGING
+            or paragraph_ind.get(f"{{{W}}}firstLine") not in (None, "0")
+            or paragraph_ind.get(f"{{{W}}}firstLineChars") not in (None, "0")
+        ):
+            list_paragraph_indent_issues += 1
     if bullet_indent_issues > 0:
         issues.append(
             "ERROR: "
@@ -506,6 +517,12 @@ def post_check(docx_path: str) -> list[str]:
             "ERROR: "
             f"{ordered_indent_issues} ordered list paragraphs still use over-indented list geometry "
             f"(expected left={EXPECTED_ORDERED_LEFT}, hanging={EXPECTED_BULLET_HANGING})"
+        )
+    if list_paragraph_indent_issues > 0:
+        issues.append(
+            "ERROR: "
+            f"{list_paragraph_indent_issues} list paragraphs do not explicitly override "
+            "Normal first-line indentation"
         )
 
     # 9. Table cell paragraphs should not inherit body first-line indent
