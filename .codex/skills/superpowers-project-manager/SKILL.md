@@ -1,6 +1,6 @@
 ---
 name: superpowers-project-manager
-description: Use when Codex 需要用版本化 docs/superpowers 管理 superpowers 项目流程、启动或继续版本、保存 brainstorming/spec/plan/review/delivery 文档、维护 manifest.yaml/project-memory.md，或处理 feature/small-change/bugfix 流程。
+description: 基于superpowers的项目编排管理，Use when 需要用版本化 docs/superpowers 管理 superpowers 项目流程、启动或继续版本、保存 brainstorming/spec/plan/review/delivery 文档、维护 manifest.yaml/project-memory.md，或处理 feature/small-change/bugfix 流程。
 ---
 
 # Superpowers 项目管理器
@@ -10,26 +10,6 @@ description: Use when Codex 需要用版本化 docs/superpowers 管理 superpowe
 使用本技能为 superpowers 原生工作流提供轻量项目管理层。它只维护版本、阶段、产物路径和项目记忆；不维护独立任务系统。任务定义和执行顺序保留在 superpowers plan 文件中。
 
 本技能不替代 `superpowers:brainstorming`、`superpowers:writing-plans`、`superpowers:using-git-worktrees`、`superpowers:executing-plans`、`superpowers:subagent-driven-development`、`superpowers:systematic-debugging`、`superpowers:verification-before-completion`、`superpowers:finishing-a-development-branch` 等技能。
-
-## 是否启动版本
-
-只读任务不初始化版本。分析、解释、代码阅读、架构说明、纯信息型问答及其他不改文件的审查，可以直接处理；如果需要记录结论，只写当前回复，不创建 `docs/superpowers/`。
-
-真实问题排查但尚未进入修改时，优先使用 `superpowers:systematic-debugging`。只有当用户决定修复、需要长期追踪，或排查结果需要进入当前项目版本记录时，才初始化或切换到 `bugfix` 版本。
-
-## 流程分流
-
-默认采用能满足质量要求的最短路径。
-
-| 场景 | 类型 | 文档要求 |
-|------|------|----------|
-| 新功能、复杂改动、跨模块项目 | `feature` | 默认需要 spec 和 plan |
-| 单文件或小范围修改、配置/文案调整、小测试补充 | `small-change` | 不强制 spec / plan，必须记录目标、边界、风险、验证方式 |
-| BUG、异常、回归、报错定位 | `bugfix` | 不强制 spec / plan，必须记录调试事实、根因和回归验证 |
-
-升级为 `feature` 的信号：影响公共 API、schema、共享逻辑、持久化、并发、跨模块边界，需求仍不清晰，验证覆盖不足，或任务演变为中大型实现/重构。
-
-降级为 `small-change` 的信号：问题已收敛为局部改动，边界清晰，不涉及共享核心逻辑，验证直接，补完整 spec / plan 的成本明显高于收益。
 
 ## 固定结构
 
@@ -50,17 +30,6 @@ docs/superpowers/
     └── delivery.md
 ```
 
-禁止默认创建：
-
-```text
-brainstorming/
-specs/
-plans/
-reviews/
-tasks/
-task001.md
-fixes/
-```
 
 版本目录保持扁平。superpowers 生成的 spec、plan、review 或 brainstorming 记录按文件直接写入当前版本根目录，并由 manifest 指向当前 spec 和 plan。
 
@@ -160,7 +129,7 @@ brainstorming -> spec -> plan -> execute -> review -> delivery
 - 使用 `superpowers:writing-plans` 生成 plan。
 - plan 写入 `docs/superpowers/<version>/`。
 - plan 内 `### Task N` 是任务事实来源。
-- 进入 execute 前，`feature` 默认必须使用 `superpowers:using-git-worktrees` 建立或确认隔离工作区。
+- 进入 execute 前，默认使用 `superpowers:using-git-worktrees` 建立或确认隔离工作区。
 - 使用 `superpowers:executing-plans` 或 `superpowers:subagent-driven-development` 执行 plan。
 - 执行进展、worktree 路径、阻塞、验证结果和关键决策写入 `execution-log.md`。
 - review 结果写入当前版本根目录。
@@ -251,7 +220,7 @@ docs/superpowers/plans/   -> docs/superpowers/<version>/
 
 ## 恢复上下文
 
-用户说“继续当前项目”时：
+用户说“继续当前项目”、“继续执行”、“按计划执行”、“按计划继续”时：
 
 1. 读取 `project-memory.md`。
 2. 读取 `manifest.yaml`。
