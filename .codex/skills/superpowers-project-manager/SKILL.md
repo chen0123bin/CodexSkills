@@ -1,6 +1,6 @@
 ---
 name: superpowers-project-manager
-description: 基于superpowers的项目编排管理，Use when 需要用版本化 docs/superpowers 管理 superpowers 项目流程、启动或继续版本、保存 brainstorming/spec/plan/review/delivery 文档、维护 manifest.yaml/project-memory.md，或处理 feature/small-change/bugfix 流程。
+description: Use when Codex 需要用版本化 docs/superpowers 管理 superpowers 项目流程、启动或继续版本、保存 brainstorming/spec/plan/review/delivery 文档、维护 manifest.yaml/project-memory.md，或处理 feature/small-change/bugfix 流程。
 ---
 
 # Superpowers 项目管理器
@@ -30,6 +30,17 @@ docs/superpowers/
     └── delivery.md
 ```
 
+禁止默认创建：
+
+```text
+brainstorming/
+specs/
+plans/
+reviews/
+tasks/
+task001.md
+fixes/
+```
 
 版本目录保持扁平。superpowers 生成的 spec、plan、review 或 brainstorming 记录按文件直接写入当前版本根目录，并由 manifest 指向当前 spec 和 plan。
 
@@ -106,7 +117,6 @@ type: feature | small-change | bugfix
 写入规则：
 
 - 只有用户明确说“记住”“以后都按这个”“作为项目约定”等，才写入。
-- 对反复证明有价值、会影响后续判断的经验，应主动建议沉淀到项目级记忆文件；用户确认后写入。
 - 每条记忆包含时间、原因、内容。
 - 时间格式统一为 `yyyy-MM-dd HH:mm:ss`。
 - 不记录普通执行过程、命令输出、阶段总结、临时判断或 task 级流水。
@@ -129,7 +139,7 @@ brainstorming -> spec -> plan -> execute -> review -> delivery
 - 使用 `superpowers:writing-plans` 生成 plan。
 - plan 写入 `docs/superpowers/<version>/`。
 - plan 内 `### Task N` 是任务事实来源。
-- 进入 execute 前，默认使用 `superpowers:using-git-worktrees` 建立或确认隔离工作区。
+- 进入 execute 前，**REQUIRED SUB-SKILL:** Use `superpowers:using-git-worktrees` 建立或确认隔离工作区。
 - 使用 `superpowers:executing-plans` 或 `superpowers:subagent-driven-development` 执行 plan。
 - 执行进展、worktree 路径、阻塞、验证结果和关键决策写入 `execution-log.md`。
 - review 结果写入当前版本根目录。
@@ -138,7 +148,7 @@ brainstorming -> spec -> plan -> execute -> review -> delivery
 
 ### small-change
 
-用于轻量任务：单文件或小范围修改、配置/文案调整、小测试补充、局部文档修改，以及边界清晰、风险可控的低风险改动。
+用于简单明确、低风险的小改动。
 
 ```text
 execute -> review -> delivery
@@ -148,9 +158,8 @@ execute -> review -> delivery
 
 - 不强制生成 spec。
 - 不强制生成 plan。
-- 开始前在 `execution-log.md` 写清目标、边界、风险、影响范围和验证方式。
-- `small-change` 低风险时可跳过 `superpowers:using-git-worktrees`；必须在 `execution-log.md` 的 Worktree 记录中写明跳过原因。
-- 如果 small-change 涉及多文件、共享逻辑、根配置、依赖、CI、schema、持久化或风险升高，进入 execute 前使用 `superpowers:using-git-worktrees`。
+- 开始前在 `execution-log.md` 写清修改意图、影响范围和验证方式。
+- 进入 execute 前，**REQUIRED SUB-SKILL:** Use `superpowers:using-git-worktrees` 建立或确认隔离工作区。
 - 进入 delivery 时，**REQUIRED SUB-SKILL:** Use `superpowers:finishing-a-development-branch` 完成分支收尾。
 - 如果改动跨多个模块或风险升高，建议升级为 `feature`。
 
@@ -167,10 +176,8 @@ systematic-debugging -> execute -> review -> delivery
 - 必须使用 `superpowers:systematic-debugging`。
 - 不强制生成 spec。
 - 不强制生成 plan。
-- `bugfix` 纯只读排查阶段不强制 worktree。
-- `bugfix` 进入代码修复前，若根因不确定、涉及多文件、共享逻辑、回归风险较高或需要长期隔离，使用 `superpowers:using-git-worktrees`。
-- 如果 bugfix 修复局部、低风险且不创建 worktree，必须在 `execution-log.md` 的 Worktree 记录中写明跳过原因。
-- 在 `execution-log.md` 记录问题现象、触发条件、预期结果、实际结果、影响范围、严重程度、日志/堆栈/环境信息、复现方式、已确认事实、假设、验证、根因、修复摘要和回归验证。
+- 进入 execute 前，**REQUIRED SUB-SKILL:** Use `superpowers:using-git-worktrees` 建立或确认隔离工作区。
+- 在 `execution-log.md` 记录问题现象、复现方式、已确认事实、假设、验证、根因、修复摘要和回归验证。
 - 根因不明确时，不进入修复；先继续排查。
 - 进入 delivery 时，**REQUIRED SUB-SKILL:** Use `superpowers:finishing-a-development-branch` 完成分支收尾。
 - 不默认创建 `fixes/` 或单 BUG 文件。
@@ -179,13 +186,7 @@ systematic-debugging -> execute -> review -> delivery
 
 ### execute
 
-进入 execute 阶段前，按版本类型决定是否使用 `superpowers:using-git-worktrees`：
-
-- `feature` 默认必须使用 `superpowers:using-git-worktrees`。
-- `small-change` 低风险时可跳过 `superpowers:using-git-worktrees`，但必须记录跳过原因。
-- `bugfix` 纯只读排查阶段不强制 worktree；进入不确定或高风险修复时使用 worktree。
-
-如果当前会话已经位于本版本对应的隔离 worktree 中，记录该路径并继续；否则按上述规则创建 worktree、完成基线检查，再开始执行。
+进入任何 execute 阶段前，先使用 `superpowers:using-git-worktrees`。如果当前会话已经位于本版本对应的隔离 worktree 中，记录该路径并继续；否则按该技能创建 worktree、完成基线检查，再开始执行。
 
 不要在 main/master 或未确认的普通工作区直接执行实现计划，除非用户明确要求这样做；如果用户要求例外，把例外原因写入 `execution-log.md`。
 
@@ -193,9 +194,7 @@ systematic-debugging -> execute -> review -> delivery
 
 实现完成且验证记录已写入后，delivery 阶段对应 `superpowers:finishing-a-development-branch`。
 
-进入 delivery 前，**REQUIRED SUB-SKILL:** Use `superpowers:verification-before-completion`。没有验证证据时，不得声称“完成”“通过”“可合并”；如果关键验证无法执行，必须写明原因并降低完成度表述。
-
-再让 finishing 技能验证测试并向用户提供合并、创建 PR、保留分支或丢弃工作的选项。只有 finishing 流程完成后，才更新 `delivery.md` 和 manifest 的交付状态。
+先让 finishing 技能验证测试并向用户提供合并、创建 PR、保留分支或丢弃工作的选项。只有 finishing 流程完成后，才更新 `delivery.md` 和 manifest 的交付状态。
 
 ## 路径覆盖
 
@@ -214,13 +213,11 @@ docs/superpowers/plans/   -> docs/superpowers/<version>/
 
 阶段切换时写入阶段记录。验证必须写入验证记录；如果无法验证，也要写明原因。
 
-目标、约束、关键决策、步骤或进度变化，应同步到 `execution-log.md`。反复证明有价值且会影响后续判断的经验，先写入“经验沉淀候选”或阶段记录；确认需要长期保留后，再写入 `project-memory.md`。
-
 允许在日志中记录“开始执行 plan 中 Task 2”这类事件，但这只是执行证据，不是任务状态系统。
 
 ## 恢复上下文
 
-用户说“继续当前项目”、“继续执行”、“按计划执行”、“按计划继续”时：
+用户说“继续当前项目”时：
 
 1. 读取 `project-memory.md`。
 2. 读取 `manifest.yaml`。
@@ -246,6 +243,5 @@ docs/superpowers/plans/   -> docs/superpowers/<version>/
 - 不要默认创建 `brainstorming/`、`specs/`、`plans/` 或 `reviews/`。
 - 不要把 plan 内任务同步成独立文件。
 - 不要把执行日志、测试结果或阶段总结写入 `project-memory.md`。
-- 不要把一次性经验直接写入 `project-memory.md`；反复证明有价值且用户确认后再沉淀。
 - 不要扩展或依赖 `project-orchestrator`。
 - 不要一次性加载所有历史版本文档。
