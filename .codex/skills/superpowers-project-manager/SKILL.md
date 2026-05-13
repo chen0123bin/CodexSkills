@@ -110,6 +110,12 @@ type: feature | small-change | bugfix
 
 如果 manifest 指向的 spec 或 plan 不存在，停止并请求用户确认正确路径，不要猜测。
 
+## 阶段路由
+
+当 `manifest.current_phase = brainstorming`，且用户请求涉及需求澄清、方案构想、设计分析、功能规划或基于文件生成设计判断时，**REQUIRED SUB-SKILL:** Use `superpowers:brainstorming`。
+
+如果用户只是要求解释、摘要、定位信息或只读审查文件，不进入 `superpowers:brainstorming`，除非分析结果将用于形成需求、设计或计划。
+
 ## 项目记忆
 
 `project-memory.md` 只记录跨版本、跨阶段仍然有效的信息。
@@ -134,7 +140,7 @@ brainstorming -> spec -> plan -> execute -> review -> delivery
 
 规则：
 
-- 使用 `superpowers:brainstorming` 进行需求澄清和设计。
+- brainstorming 阶段按“阶段路由”执行；满足条件时必须调用 `superpowers:brainstorming`。
 - spec 写入 `docs/superpowers/<version>/`。
 - 使用 `superpowers:writing-plans` 生成 plan。
 - plan 写入 `docs/superpowers/<version>/`。
